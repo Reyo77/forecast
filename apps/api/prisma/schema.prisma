@@ -22,15 +22,21 @@ enum Role {
 }
 
 model Tenant {
-  id        String       @id @default(cuid())
-  name      String
-  slug      String       @unique
-  status    TenantStatus @default(ACTIVE)
-  createdAt DateTime     @default(now())
-  updatedAt DateTime     @updatedAt
-  users     User[]
-  invites   Invite[]
-  auditLogs AuditLog[]
+  id            String         @id @default(cuid())
+  name          String
+  slug          String         @unique
+  status        TenantStatus   @default(ACTIVE)
+  createdAt     DateTime       @default(now())
+  updatedAt     DateTime       @updatedAt
+  users         User[]
+  invites       Invite[]
+  auditLogs     AuditLog[]
+  subscription  Subscription?
+  invoices      Invoice[]
+  usageCounters UsageCounter[]
+  notifications Notification[]
+  aiRequests    AiRequest[]
+  jobs          Job[]
 }
 
 model User {
@@ -40,6 +46,7 @@ model User {
   name          String
   role          Role
   isActive      Boolean              @default(true)
+  lastLoginAt   DateTime?
   failedLogins  Int                  @default(0)
   lockedUntil   DateTime?
   tenantId      String?
@@ -49,6 +56,7 @@ model User {
   refreshTokens RefreshToken[]
   resetTokens   PasswordResetToken[]
   auditLogs     AuditLog[]
+  notifications Notification[]
 
   @@index([tenantId])
 }
@@ -111,4 +119,149 @@ model AuditLog {
   @@index([tenantId, createdAt])
   @@index([action])
   @@index([actorId])
+}
+
+enum SubscriptionStatus {
+  TRIALING
+  ACTIVE
+  PAST_DUE
+  CANCELED
+}
+
+enum InvoiceStatus {
+  PENDING
+  PAID
+  VOID
+}
+
+model Plan {
+  id            String         @id @default(cuid())
+  code          String         @unique
+  name          String
+  priceCents    Int
+  limits        Json
+  isActive      Boolean        @default(true)
+  isPublic      Boolean        @default(true)
+  isCustom      Boolean        @default(false)
+  sortOrder     Int            @default(100)
+  createdAt     DateTime       @default(now())
+  updatedAt     DateTime       @updatedAt
+  subscriptions Subscription[] @relation("CurrentPlan")
+  pendingFor    Subscription[] @relation("PendingPlan")
+}
+
+model Subscription {
+  id            String             @id @default(cuid())
+  tenantId      String             @unique
+  tenant        Tenant             @relation(fields: [tenantId], references: [id], onDelete: Cascade)
+  planId        String
+  plan          Plan               @relation("CurrentPlan", fields: [planId], references: [id])
+  pendingPlanId String?
+  pendingPlan   Plan?              @relation("PendingPlan", fields: [pendingPlanId], references: [id])
+  status        SubscriptionStatus @default(ACTIVE)
+  periodStart   DateTime
+  periodEnd     DateTime
+  trialEndsAt   DateTime?
+  convertedAt   DateTime?
+  customLimits  Json?
+  createdAt     DateTime           @default(now())
+  updatedAt     DateTime           @updatedAt
+  invoices      Invoice[]
+
+  @@index([planId])
+  @@index([status, periodEnd])
+}
+
+model Invoice {
+  id             String        @id @default(cuid())
+  tenantId       String
+  tenant         Tenant        @relation(fields: [tenantId], references: [id], onDelete: Cascade)
+  subscriptionId String?
+  subscription   Subscription? @relation(fields: [subscriptionId], references: [id], onDelete: SetNull)
+  number         String        @unique
+  amountCents    Int
+  status         InvoiceStatus @default(PAID)
+  planName       String
+  description    String
+  periodStart    DateTime
+  periodEnd      DateTime
+  paidAt         DateTime?
+  createdAt      DateTime      @default(now())
+  updatedAt      DateTime      @updatedAt
+
+  @@index([tenantId])
+}
+
+model InvoiceSequence {
+  year Int @id
+  last Int @default(0)
+}
+
+model UsageCounter {
+  id          String   @id @default(cuid())
+  tenantId    String
+  tenant      Tenant   @relation(fields: [tenantId], references: [id], onDelete: Cascade)
+  metric      String
+  periodStart DateTime
+  count       Int      @default(0)
+  createdAt   DateTime @default(now())
+  updatedAt   DateTime @updatedAt
+
+  @@unique([tenantId, metric, periodStart])
+}
+
+model Notification {
+  id        String    @id @default(cuid())
+  tenantId  String
+  tenant    Tenant    @relation(fields: [tenantId], references: [id], onDelete: Cascade)
+  userId    String
+  user      User      @relation(fields: [userId], references: [id], onDelete: Cascade)
+  type      String
+  title     String
+  body      String    @db.Text
+  readAt    DateTime?
+  createdAt DateTime  @default(now())
+  updatedAt DateTime  @updatedAt
+
+  @@index([tenantId, userId, readAt])
+}
+
+enum JobStatus {
+  PENDING
+  RUNNING
+  DONE
+  FAILED
+}
+
+model Job {
+  id        String    @id @default(cuid())
+  tenantId  String?
+  tenant    Tenant?   @relation(fields: [tenantId], references: [id], onDelete: Cascade)
+  type      String
+  payload   Json?
+  status    JobStatus @default(PENDING)
+  attempts  Int       @default(0)
+  runAfter  DateTime  @default(now())
+  lastError String?   @db.Text
+  createdAt DateTime  @default(now())
+  updatedAt DateTime  @updatedAt
+
+  @@index([status, runAfter])
+  @@index([tenantId])
+}
+
+model AiRequest {
+  id           String   @id @default(cuid())
+  tenantId     String
+  tenant       Tenant   @relation(fields: [tenantId], references: [id], onDelete: Cascade)
+  userId       String?
+  feature      String
+  inputTokens  Int      @default(0)
+  outputTokens Int      @default(0)
+  status       String
+  latencyMs    Int      @default(0)
+  createdAt    DateTime @default(now())
+  updatedAt    DateTime @updatedAt
+
+  @@index([tenantId, createdAt])
 }

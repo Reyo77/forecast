@@ -11,6 +11,13 @@ import { AppLayout } from './components/AppLayout';
 import { HomePage } from './routes/HomePage';
 import { TeamPage } from './features/team/TeamPage';
 import { AuditLogPage } from './features/audit/AuditLogPage';
+import { PricingPage } from './features/billing/PricingPage';
+import { BillingPage } from './features/billing/BillingPage';
+import { InvoicePage, InvoicesPage } from './features/billing/InvoicesPage';
+import { MetricsPage } from './features/admin/MetricsPage';
+import { TenantsPage } from './features/admin/TenantsPage';
+import { TenantDetailPage } from './features/admin/TenantDetailPage';
+import { PlansAdminPage } from './features/admin/PlansAdminPage';
 
 export function App() {
   return (
@@ -20,6 +27,7 @@ export function App() {
         <Route path="/signup" element={<SignupPage />} />
         <Route path="/accept-invite" element={<AcceptInvitePage />} />
         <Route path="/reset-password" element={<ResetPasswordPage />} />
+        <Route path="/pricing" element={<PricingPage />} />
         <Route element={<ProtectedRoute />}>
           <Route element={<AppLayout />}>
             <Route path="/" element={<HomePage />} />
@@ -29,6 +37,17 @@ export function App() {
             </Route>
             <Route element={<RequirePermission permission="audit:read" />}>
               <Route path="/audit-log" element={<AuditLogPage />} />
+            </Route>
+            <Route element={<RequirePermission permission="billing:read" />}>
+              <Route path="/billing" element={<BillingPage />} />
+              <Route path="/billing/invoices" element={<InvoicesPage />} />
+              <Route path="/billing/invoices/:id" element={<InvoicePage />} />
+            </Route>
+            <Route element={<RequirePermission permission="admin:access" />}>
+              <Route path="/admin" element={<MetricsPage />} />
+              <Route path="/admin/tenants" element={<TenantsPage />} />
+              <Route path="/admin/tenants/:id" element={<TenantDetailPage />} />
+              <Route path="/admin/plans" element={<PlansAdminPage />} />
             </Route>
           </Route>
         </Route>

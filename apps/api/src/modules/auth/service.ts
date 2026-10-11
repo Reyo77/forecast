@@ -3,6 +3,8 @@ import type { Prisma, User } from '@prisma/client';
 import type { AuthUser, ChangePasswordInput, LoginInput, SignupInput } from '@supplycast/shared';
 import { prisma } from '../../db/client';
 import { HttpError } from '../../middleware/errors';
+import { ensureDefaultPlans } from '../billing/plans';
+import { createTrialSubscription } from '../billing/subscription';
 import { generateOpaqueToken, hashToken, REFRESH_TTL_MS, signAccessToken } from './tokens';
 
 const MAX_FAILED_LOGINS = 5;
@@ -60,6 +62,7 @@ export async function signup(input: SignupInput, secret: string): Promise<Sessio
   if (existing)
     throw new HttpError(409, 'EMAIL_TAKEN', 'An account with this email already exists');
   const passwordHash = await hashPassword(input.password);
+  await ensureDefaultPlans();
   try {
     return await prisma.$transaction(async (tx) => {
       const tenant = await tx.tenant.create({
@@ -74,6 +77,7 @@ export async function signup(input: SignupInput, secret: string): Promise<Sessio
           tenantId: tenant.id,
         },
       });
+      await createTrialSubscription(tx, tenant.id);
       return issueSession(user, secret, tx);
     });
   } catch (err) {
@@ -115,7 +119,7 @@ export async function login(input: LoginInput, secret: string): Promise<Session>
   if (!user.isActive) throw invalid;
   const fresh = await prisma.user.update({
     where: { id: user.id },
-    data: { failedLogins: 0, lockedUntil: null },
+    data: { failedLogins: 0, lockedUntil: null, lastLoginAt: new Date() },
   });
   return issueSession(fresh, secret);
 }

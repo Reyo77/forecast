@@ -1,3 +1,23 @@
 @tailwind base;
 @tailwind components;
 @tailwind utilities;
+
+/* Chart tokens (categorical slot 1/2, surface, ink). Dark values are stepped for the dark surface. */
+:root {
+  --chart-surface: #fcfcfb;
+  --chart-ink: #0b0b0b;
+  --chart-ink-2: #52514e;
+  --chart-grid: #e4e3df;
+  --series-1: #2a78d6;
+  --series-2: #eb6834;
+}
+@media (prefers-color-scheme: dark) {
+  :root:where(:not([data-theme='light'])) {
+    --chart-surface: #1a1a19;
+    --chart-ink: #f0efec;
+    --chart-ink-2: #c3c2b7;
+    --chart-grid: #3a3a37;
+    --series-1: #3987e5;
+    --series-2: #d95926;
+  }
+}

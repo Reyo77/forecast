@@ -29,6 +29,13 @@ First time only: `npx playwright install chromium`.
 
 Setup after `docker compose up -d`: `npm run db:migrate` then `npm run db:seed` (creates the Super Admin from `SUPER_ADMIN_EMAIL`/`SUPER_ADMIN_PASSWORD`). API tests run against the test database (`DATABASE_URL_TEST`) and apply migrations automatically.
 
+## Plans, billing and the admin console (Phase 2)
+
+- Plans and their limits are rows in the database (editable by the Super Admin). New tenants get a 14-day Starter trial; a daily job (`billing.daily`) moves expired trials to Free, applies scheduled downgrades and renews paid periods.
+- **Payments are simulated.** Choosing a paid plan applies it immediately, shows "Payment successful" and records an already-paid invoice (`INV-YYYY-000001`). There is no gateway, no pending state and no "simulate payment" button. Upgrades are immediate; downgrades take effect at period end and are blocked while usage exceeds the new plan's limits.
+- Limits: count-based (users, SKUs, locations, scenarios) are checked against live rows, period-based (forecast runs, AI requests) against a per-calendar-month counter. Both are enforced atomically by locking the tenant row, so concurrent requests cannot overshoot. Hitting a limit returns HTTP 402 `PLAN_LIMIT_REACHED` with `{ metric, limit, current }`. Notifications fire at 80% and 100%.
+- Super Admin console at `/admin`: tenants, plans, metrics (MRR, trial conversion, AI requests/day, failed jobs), suspend/reactivate, owner reset links, and read-only impersonation (banner, every request audited, all writes refused).
+
 ## Layout
 
 `apps/api` (Express + Prisma), `apps/web` (React + Vite), `apps/e2e` (Playwright), `packages/shared` (Zod schemas/types).

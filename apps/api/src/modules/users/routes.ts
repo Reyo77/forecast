@@ -12,6 +12,7 @@ import { HttpError } from '../../middleware/errors';
 import type { Guards } from '../../middleware/guards';
 import { paged, paginationSchema, skipTake } from '../../lib/pagination';
 import { auditReq } from '../audit/service';
+import { createWithinLimit } from '../billing/limits';
 import { INVITE_TTL_MS, newToken, RESET_TTL_MS } from './service';
 
 const userSelect = {
@@ -78,14 +79,17 @@ export function usersRouter(opts: { guards: Guards; appUrl: string }): Router {
           'You cannot change your own role or deactivate yourself',
         );
       }
-      const updated = await req.db!.user.update({
-        where: { id: target.id },
-        data: {
-          ...(input.role && { role: input.role }),
-          ...(input.isActive !== undefined && { isActive: input.isActive }),
-        },
-        select: userSelect,
-      });
+      const data = {
+        ...(input.role && { role: input.role }),
+        ...(input.isActive !== undefined && { isActive: input.isActive }),
+      };
+      // Reactivating a user takes a seat, so it is checked against the plan's user limit.
+      const updated =
+        input.isActive === true && !target.isActive
+          ? await createWithinLimit(req.tenantId!, 'users', (tx) =>
+              tx.user.update({ where: { id: target.id }, data, select: userSelect }),
+            )
+          : await req.db!.user.update({ where: { id: target.id }, data, select: userSelect });
       if (input.isActive === false) {
         await prisma.refreshToken.updateMany({
           where: { userId: target.id, revokedAt: null },
@@ -136,16 +140,29 @@ export function usersRouter(opts: { guards: Guards; appUrl: string }): Router {
         throw new HttpError(409, 'EMAIL_TAKEN', 'A user with this email already exists');
       }
       const { token, tokenHash } = newToken();
-      await req.db!.invite.deleteMany({ where: { email: input.email, acceptedAt: null } });
-      const invite = await req.db!.invite.create({
-        data: {
-          email: input.email,
-          role: input.role,
-          tokenHash,
-          expiresAt: new Date(Date.now() + INVITE_TTL_MS),
-          invitedById: req.auth!.userId,
-        } as never,
-      });
+      const invite = await createWithinLimit(
+        req.tenantId!,
+        'users',
+        (tx) =>
+          tx.invite.create({
+            data: {
+              tenantId: req.tenantId!,
+              email: input.email,
+              role: input.role,
+              tokenHash,
+              expiresAt: new Date(Date.now() + INVITE_TTL_MS),
+              invitedById: req.auth!.userId,
+            },
+          }),
+        {
+          // A re-invite replaces the old one, so drop it before counting seats.
+          beforeCount: async (tx) => {
+            await tx.invite.deleteMany({
+              where: { tenantId: req.tenantId!, email: input.email, acceptedAt: null },
+            });
+          },
+        },
+      );
       await auditReq(req, 'user.invited', 'Invite', invite.id, {
         email: input.email,
         role: input.role,

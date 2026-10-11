@@ -9,10 +9,18 @@ export interface AccessPayload {
   sub: string;
   tenantId: string | null;
   role: Role;
+  /** Super Admin id when this token is a read-only impersonation of `sub`. */
+  imp?: string;
 }
 
-export function signAccessToken(payload: AccessPayload, secret: string): string {
-  return jwt.sign(payload, secret, { expiresIn: ACCESS_TTL_SECONDS });
+export const IMPERSONATION_TTL_SECONDS = 30 * 60;
+
+export function signAccessToken(
+  payload: AccessPayload,
+  secret: string,
+  ttlSeconds = ACCESS_TTL_SECONDS,
+): string {
+  return jwt.sign(payload, secret, { expiresIn: ttlSeconds });
 }
 
 export function verifyAccessToken(token: string, secret: string): AccessPayload {

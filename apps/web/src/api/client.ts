@@ -13,6 +13,7 @@ export class ApiError extends Error {
 
 let accessToken: string | null = null;
 let onAuthLost: (() => void) | null = null;
+let onSuspended: (() => void) | null = null;
 
 export const tokenStore = {
   set: (t: string | null) => {
@@ -21,6 +22,9 @@ export const tokenStore = {
   get: () => accessToken,
   onAuthLost: (fn: (() => void) | null) => {
     onAuthLost = fn;
+  },
+  onSuspended: (fn: (() => void) | null) => {
+    onSuspended = fn;
   },
 };
 
@@ -41,6 +45,7 @@ async function parse<T>(res: Response): Promise<T> {
   const data = await res.json().catch(() => null);
   if (!res.ok) {
     const err = (data as ErrorBody | null)?.error;
+    if (res.status === 403 && err?.code === 'TENANT_SUSPENDED') onSuspended?.();
     throw new ApiError(
       res.status,
       err?.code ?? 'UNKNOWN',

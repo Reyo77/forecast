@@ -30,7 +30,7 @@ test('signup → session survives reload → logout/login → change password', 
   await page.getByLabel('Current password').fill(password);
   await page.getByLabel('New password').fill('NewPassword456');
   await page.getByRole('button', { name: 'Change password' }).click();
-  await expect(page.getByRole('status')).toContainText('Password changed');
+  await expect(page.getByText('Password changed')).toBeVisible();
 });
 
 test('Phase 1: invite a Planner by link, planner cannot see Team; reset link; audit log', async ({
@@ -99,7 +99,7 @@ test('Phase 1: invite a Planner by link, planner cannot see Team; reset link; au
   await resetPage.goto(resetLink);
   await resetPage.getByLabel('New password').fill('ResetPass12345');
   await resetPage.getByRole('button', { name: 'Set new password' }).click();
-  await expect(resetPage.getByRole('status')).toContainText('Your password was changed');
+  await expect(resetPage.getByText('Your password was changed')).toBeVisible();
   await resetPage.getByRole('link', { name: 'Go to log in' }).click();
   await resetPage.getByLabel('Email').fill(plannerEmail);
   await resetPage.getByLabel('Password').fill('ResetPass12345');

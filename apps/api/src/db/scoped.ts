@@ -5,7 +5,17 @@ import { prisma } from './client';
  * Models that carry a `tenantId` column. Every tenant-owned model MUST be listed here so that
  * scoped(tenantId) filters it. (A test fails if a Prisma model with tenantId is missing.)
  */
-export const TENANT_SCOPED_MODELS = new Set<string>(['User', 'Invite', 'AuditLog']);
+export const TENANT_SCOPED_MODELS = new Set<string>([
+  'User',
+  'Invite',
+  'AuditLog',
+  'Subscription',
+  'Invoice',
+  'UsageCounter',
+  'Notification',
+  'Job',
+  'AiRequest',
+]);
 
 const WHERE_OPS = new Set([
   'findMany',

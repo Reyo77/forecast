@@ -110,7 +110,14 @@ export function authRouter(opts: AuthRouterOptions): { auth: Router; invites: Ro
       // Tenant users are read through the tenant-scoped client; Super Admins have no tenant.
       const db = req.auth!.tenantId ? scoped(req.auth!.tenantId) : prisma;
       const user = await db.user.findUniqueOrThrow({ where: { id: req.auth!.userId } });
-      res.json({ user: service.toAuthUser(user) });
+      const tenant = req.tenantId
+        ? await prisma.tenant.findUnique({ where: { id: req.tenantId }, select: { name: true } })
+        : null;
+      res.json({
+        user: service.toAuthUser(user),
+        tenantName: tenant?.name ?? null,
+        impersonating: req.auth!.impersonatorId ? { by: req.auth!.impersonatorId } : null,
+      });
     }),
   );
 

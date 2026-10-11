@@ -3,6 +3,7 @@ import userEvent from '@testing-library/user-event';
 import { MemoryRouter } from 'react-router-dom';
 import { StrictMode } from 'react';
 import { afterEach, beforeEach, describe, expect, it, vi } from 'vitest';
+import { QueryClient, QueryClientProvider } from '@tanstack/react-query';
 import { App } from '../src/App';
 import { tokenStore } from '../src/api/client';
 
@@ -22,10 +23,13 @@ function mockFetch(routes: Record<string, (body: unknown) => Promise<Response>>)
 }
 
 function renderAt(path: string) {
+  const qc = new QueryClient({ defaultOptions: { queries: { retry: false } } });
   return render(
-    <MemoryRouter initialEntries={[path]}>
-      <App />
-    </MemoryRouter>,
+    <QueryClientProvider client={qc}>
+      <MemoryRouter initialEntries={[path]}>
+        <App />
+      </MemoryRouter>
+    </QueryClientProvider>,
   );
 }
 
@@ -130,9 +134,11 @@ describe('session restore', () => {
     });
     render(
       <StrictMode>
-        <MemoryRouter initialEntries={['/change-password']}>
-          <App />
-        </MemoryRouter>
+        <QueryClientProvider client={new QueryClient()}>
+          <MemoryRouter initialEntries={['/change-password']}>
+            <App />
+          </MemoryRouter>
+        </QueryClientProvider>
       </StrictMode>,
     );
     expect(await screen.findByRole('heading', { name: 'Change password' })).toBeInTheDocument();
