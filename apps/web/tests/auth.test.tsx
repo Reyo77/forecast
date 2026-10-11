@@ -1,6 +1,7 @@
 import { render, screen, waitFor } from '@testing-library/react';
 import userEvent from '@testing-library/user-event';
 import { MemoryRouter } from 'react-router-dom';
+import { StrictMode } from 'react';
 import { afterEach, beforeEach, describe, expect, it, vi } from 'vitest';
 import { App } from '../src/App';
 import { tokenStore } from '../src/api/client';
@@ -116,5 +117,26 @@ describe('auth UI', () => {
     await userEvent.type(screen.getByLabelText('New password'), 'NewPassword456');
     await userEvent.click(screen.getByRole('button', { name: 'Change password' }));
     await waitFor(() => expect(screen.getByRole('status')).toHaveTextContent('Password changed'));
+  });
+});
+
+describe('session restore', () => {
+  afterEach(() => vi.unstubAllGlobals());
+
+  it('sends a single refresh request even when the effect runs twice (StrictMode)', async () => {
+    const fetchMock = mockFetch({
+      'POST /auth/refresh': () => json(200, { accessToken: 'tok', user }),
+      'GET /health': () => json(200, {}),
+    });
+    render(
+      <StrictMode>
+        <MemoryRouter initialEntries={['/change-password']}>
+          <App />
+        </MemoryRouter>
+      </StrictMode>,
+    );
+    expect(await screen.findByRole('heading', { name: 'Change password' })).toBeInTheDocument();
+    const refreshCalls = fetchMock.mock.calls.filter(([u]) => String(u).includes('/auth/refresh'));
+    expect(refreshCalls).toHaveLength(1);
   });
 });

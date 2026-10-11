@@ -14,7 +14,7 @@ import type {
   LoginInput,
   SignupInput,
 } from '@supplycast/shared';
-import { api, tokenStore } from '../../api/client';
+import { api, refreshSession, tokenStore } from '../../api/client';
 
 interface AuthState {
   user: AuthUser | null;
@@ -42,9 +42,8 @@ export function AuthProvider({ children }: { children: ReactNode }) {
       setUser(null);
     });
     // Restore the session from the httpOnly refresh cookie on page load.
-    api<AuthResponse>('/auth/refresh', 'POST')
-      .then(accept)
-      .catch(() => undefined)
+    refreshSession()
+      .then((session) => session && accept(session))
       .finally(() => setLoading(false));
     return () => tokenStore.onAuthLost(null);
   }, [accept]);

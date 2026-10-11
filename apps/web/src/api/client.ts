@@ -1,4 +1,4 @@
-import type { ErrorBody } from '@supplycast/shared';
+import type { AuthResponse, ErrorBody } from '@supplycast/shared';
 
 export class ApiError extends Error {
   constructor(
@@ -51,15 +51,19 @@ async function parse<T>(res: Response): Promise<T> {
   return data as T;
 }
 
-/** Refreshes the access token once; shared by concurrent callers. */
-let refreshing: Promise<string | null> | null = null;
-export function refreshAccessToken(): Promise<string | null> {
+/**
+ * Refreshes the session once; concurrent callers (e.g. React StrictMode's double effect or
+ * parallel 401s) share one request. The server rotates refresh tokens, so two simultaneous
+ * calls with the same cookie would look like token reuse and revoke every session.
+ */
+let refreshing: Promise<AuthResponse | null> | null = null;
+export function refreshSession(): Promise<AuthResponse | null> {
   refreshing ??= send('/auth/refresh', 'POST', undefined, null)
     .then(async (res) => {
       if (!res.ok) return null;
-      const data = (await res.json()) as { accessToken: string };
+      const data = (await res.json()) as AuthResponse;
       accessToken = data.accessToken;
-      return accessToken;
+      return data;
     })
     .catch(() => null)
     .finally(() => {
@@ -71,7 +75,7 @@ export function refreshAccessToken(): Promise<string | null> {
 export async function api<T>(path: string, method = 'GET', body?: unknown): Promise<T> {
   let res = await send(path, method, body);
   if (res.status === 401 && !path.startsWith('/auth/')) {
-    if (await refreshAccessToken()) res = await send(path, method, body);
+    if (await refreshSession()) res = await send(path, method, body);
     else onAuthLost?.();
   }
   return parse<T>(res);
