@@ -3,25 +3,32 @@ import rateLimit from 'express-rate-limit';
 import {
   changePasswordSchema,
   loginSchema,
+  acceptInviteSchema,
+  resetPasswordSchema,
   signupSchema,
   type AuthResponse,
 } from '@supplycast/shared';
 import { prisma } from '../../db/client';
-import { requireAuth } from '../../middleware/auth';
+import type { Guards } from '../../middleware/guards';
+import { scoped } from '../../db/scoped';
 import { HttpError } from '../../middleware/errors';
 import * as service from './service';
+import * as usersService from '../users/service';
+import { auditReq, audit } from '../audit/service';
 import { REFRESH_TTL_MS } from './tokens';
 
 const COOKIE_NAME = 'refresh_token';
 
 export interface AuthRouterOptions {
   accessSecret: string;
+  guards: Guards;
   production: boolean;
   loginRateLimitMax: number;
 }
 
-export function authRouter(opts: AuthRouterOptions): Router {
+export function authRouter(opts: AuthRouterOptions): { auth: Router; invites: Router } {
   const router = Router();
+  const invites = Router();
   const cookieOptions: CookieOptions = {
     httpOnly: true,
     sameSite: 'strict',
@@ -52,7 +59,14 @@ export function authRouter(opts: AuthRouterOptions): Router {
     '/signup',
     authLimiter,
     wrap(async (req, res) => {
-      send(res, 201, await service.signup(signupSchema.parse(req.body), opts.accessSecret));
+      const session = await service.signup(signupSchema.parse(req.body), opts.accessSecret);
+      await audit(
+        { tenantId: session.user.tenantId, actorId: session.user.id, ip: req.ip },
+        'tenant.created',
+        'Tenant',
+        session.user.tenantId,
+      );
+      send(res, 201, session);
     }),
   );
 
@@ -91,21 +105,55 @@ export function authRouter(opts: AuthRouterOptions): Router {
 
   router.get(
     '/me',
-    requireAuth(opts.accessSecret),
+    ...opts.guards.authed(),
     wrap(async (req, res) => {
-      const user = await prisma.user.findUniqueOrThrow({ where: { id: req.auth!.userId } });
+      // Tenant users are read through the tenant-scoped client; Super Admins have no tenant.
+      const db = req.auth!.tenantId ? scoped(req.auth!.tenantId) : prisma;
+      const user = await db.user.findUniqueOrThrow({ where: { id: req.auth!.userId } });
       res.json({ user: service.toAuthUser(user) });
     }),
   );
 
   router.post(
     '/change-password',
-    requireAuth(opts.accessSecret),
+    ...opts.guards.authed(),
     wrap(async (req, res) => {
       const input = changePasswordSchema.parse(req.body);
-      send(res, 200, await service.changePassword(req.auth!.userId, input, opts.accessSecret));
+      const session = await service.changePassword(req.auth!.userId, input, opts.accessSecret);
+      await auditReq(req, 'auth.password_changed', 'User', req.auth!.userId);
+      send(res, 200, session);
     }),
   );
 
-  return router;
+  router.post(
+    '/reset-password',
+    authLimiter,
+    wrap(async (req, res) => {
+      const input = resetPasswordSchema.parse(req.body);
+      const { userId, tenantId } = await usersService.resetPassword(input.token, input.newPassword);
+      await audit({ tenantId, actorId: userId, ip: req.ip }, 'auth.password_reset', 'User', userId);
+      res.status(204).end();
+    }),
+  );
+
+  invites.post(
+    '/accept',
+    authLimiter,
+    wrap(async (req, res) => {
+      const session = await usersService.acceptInvite(
+        acceptInviteSchema.parse(req.body),
+        opts.accessSecret,
+      );
+      await audit(
+        { tenantId: session.user.tenantId, actorId: session.user.id, ip: req.ip },
+        'invite.accepted',
+        'User',
+        session.user.id,
+        { role: session.user.role },
+      );
+      send(res, 201, session);
+    }),
+  );
+
+  return { auth: router, invites };
 }

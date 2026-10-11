@@ -8,6 +8,7 @@ import {
   type ReactNode,
 } from 'react';
 import type {
+  AcceptInviteInput,
   AuthResponse,
   AuthUser,
   ChangePasswordInput,
@@ -21,6 +22,7 @@ interface AuthState {
   loading: boolean;
   login: (input: LoginInput) => Promise<void>;
   signup: (input: SignupInput) => Promise<void>;
+  acceptInvite: (input: AcceptInviteInput) => Promise<void>;
   logout: () => Promise<void>;
   changePassword: (input: ChangePasswordInput) => Promise<void>;
 }
@@ -53,6 +55,8 @@ export function AuthProvider({ children }: { children: ReactNode }) {
       user,
       loading,
       login: async (input) => accept(await api<AuthResponse>('/auth/login', 'POST', input)),
+      acceptInvite: async (input) =>
+        accept(await api<AuthResponse>('/invites/accept', 'POST', input)),
       signup: async (input) => accept(await api<AuthResponse>('/auth/signup', 'POST', input)),
       changePassword: async (input) =>
         accept(await api<AuthResponse>('/auth/change-password', 'POST', input)),

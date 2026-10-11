@@ -27,7 +27,7 @@ export function toAuthUser(u: Pick<User, 'id' | 'email' | 'name' | 'role' | 'ten
 
 type Db = Prisma.TransactionClient | typeof prisma;
 
-async function issueSession(user: User, secret: string, db: Db = prisma): Promise<Session> {
+export async function issueSession(user: User, secret: string, db: Db = prisma): Promise<Session> {
   const refreshToken = generateOpaqueToken();
   await db.refreshToken.create({
     data: {

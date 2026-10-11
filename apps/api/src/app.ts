@@ -6,7 +6,10 @@ import pinoHttp from 'pino-http';
 import { logger } from './config/logger';
 import type { Env } from './config/env';
 import { errorHandler, notFoundHandler } from './middleware/errors';
+import { createGuards } from './middleware/guards';
 import { authRouter } from './modules/auth/routes';
+import { usersRouter } from './modules/users/routes';
+import { auditRouter } from './modules/audit/routes';
 
 export type AppConfig = Pick<Env, 'APP_URL' | 'JWT_ACCESS_SECRET'> & {
   NODE_ENV?: Env['NODE_ENV'];
@@ -29,14 +32,19 @@ export function createApp(env: AppConfig, options: AppOptions = {}) {
     res.json({ status: 'ok' });
   });
 
-  app.use(
-    '/auth',
-    authRouter({
-      accessSecret: env.JWT_ACCESS_SECRET,
-      production: env.NODE_ENV === 'production',
-      loginRateLimitMax: options.loginRateLimitMax ?? 20,
-    }),
-  );
+  const guards = createGuards(env.JWT_ACCESS_SECRET);
+
+  const authRouters = authRouter({
+    accessSecret: env.JWT_ACCESS_SECRET,
+    guards,
+    production: env.NODE_ENV === 'production',
+    loginRateLimitMax: options.loginRateLimitMax ?? 20,
+  });
+  app.use('/auth', authRouters.auth);
+  app.use('/invites', authRouters.invites);
+
+  app.use(usersRouter({ guards, appUrl: env.APP_URL }));
+  app.use('/audit-logs', auditRouter(guards));
 
   app.use(notFoundHandler);
   app.use(errorHandler);

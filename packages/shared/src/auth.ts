@@ -44,3 +44,64 @@ export interface AuthResponse {
   accessToken: string;
   user: AuthUser;
 }
+
+export const ASSIGNABLE_ROLES = ['ADMIN', 'PLANNER', 'VIEWER'] as const;
+export type AssignableRole = (typeof ASSIGNABLE_ROLES)[number];
+
+export const createInviteSchema = z.object({
+  email: emailSchema,
+  role: z.enum(ASSIGNABLE_ROLES),
+});
+export type CreateInviteInput = z.infer<typeof createInviteSchema>;
+
+export const acceptInviteSchema = z.object({
+  token: z.string().min(10).max(200),
+  name: z.string().trim().min(1, 'Name is required').max(100),
+  password: passwordSchema,
+});
+export type AcceptInviteInput = z.infer<typeof acceptInviteSchema>;
+
+export const updateUserSchema = z
+  .object({
+    role: z.enum(ASSIGNABLE_ROLES).optional(),
+    isActive: z.boolean().optional(),
+  })
+  .refine((v) => v.role !== undefined || v.isActive !== undefined, 'Nothing to update');
+export type UpdateUserInput = z.infer<typeof updateUserSchema>;
+
+export const resetPasswordSchema = z.object({
+  token: z.string().min(10).max(200),
+  newPassword: passwordSchema,
+});
+export type ResetPasswordInput = z.infer<typeof resetPasswordSchema>;
+
+export const transferOwnershipSchema = z.object({
+  userId: z.string().min(1).max(64),
+  password: z.string().min(1).max(128),
+});
+export type TransferOwnershipInput = z.infer<typeof transferOwnershipSchema>;
+
+export interface TeamUser {
+  id: string;
+  email: string;
+  name: string;
+  role: Role;
+  isActive: boolean;
+  createdAt: string;
+}
+
+export interface TeamInvite {
+  id: string;
+  email: string;
+  role: Role;
+  expiresAt: string;
+  createdAt: string;
+  expired: boolean;
+}
+
+export interface Paged<T> {
+  items: T[];
+  total: number;
+  page: number;
+  pageSize: number;
+}

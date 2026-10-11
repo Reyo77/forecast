@@ -2,6 +2,7 @@
 module.exports = {
   preset: 'ts-jest',
   testEnvironment: 'node',
+  maxWorkers: 1, // all suites share one test database
   roots: ['<rootDir>/src', '<rootDir>/tests'],
   globalSetup: '<rootDir>/tests/global-setup.js',
   setupFiles: ['<rootDir>/tests/env-setup.js'],
