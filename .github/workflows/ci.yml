@@ -1,0 +1,48 @@
+name: CI
+on:
+  push:
+    branches: [main]
+  pull_request:
+
+env:
+  DATABASE_URL: mysql://supplycast:supplycast@localhost:3306/supplycast
+  DATABASE_URL_TEST: mysql://supplycast:supplycast@localhost:3307/supplycast_test
+  JWT_ACCESS_SECRET: ci-access-secret
+  JWT_REFRESH_SECRET: ci-refresh-secret
+  APP_URL: http://localhost:5173
+  API_URL: http://localhost:4000
+  GEMINI_API_KEY: ci-fake-key
+  GEMINI_MODEL: gemini-2.5-flash
+  SIMULATED_PAYMENTS: 'true'
+  SUPER_ADMIN_EMAIL: admin@supplycast.local
+  SUPER_ADMIN_PASSWORD: ci-password
+
+jobs:
+  check:
+    runs-on: ubuntu-latest
+    services:
+      mysql:
+        image: mysql:8.0
+        env:
+          MYSQL_ROOT_PASSWORD: root
+          MYSQL_DATABASE: supplycast_test
+          MYSQL_USER: supplycast
+          MYSQL_PASSWORD: supplycast
+        ports: ['3307:3306']
+        options: >-
+          --health-cmd="mysqladmin ping -h localhost -uroot -proot"
+          --health-interval=5s --health-retries=20
+    steps:
+      - uses: actions/checkout@v4
+      - uses: actions/setup-node@v4
+        with:
+          node-version: 20
+          cache: npm
+      - run: npm ci
+      - run: npx prisma generate
+        working-directory: apps/api
+      - run: npm run lint
+      - run: npm run typecheck
+      - run: npm test
+      - run: npx playwright install --with-deps chromium
+      - run: npm run e2e
