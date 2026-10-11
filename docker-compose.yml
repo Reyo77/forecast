@@ -7,7 +7,7 @@ services:
       MYSQL_USER: supplycast
       MYSQL_PASSWORD: supplycast
     ports: ['${DEV_DB_PORT:-3306}:3306']
-    volumes: [dev-data:/var/lib/mysql]
+    volumes: [dev-data:/var/lib/mysql, ./docker/init.sql:/docker-entrypoint-initdb.d/init.sql:ro]
     healthcheck:
       test: ['CMD', 'mysqladmin', 'ping', '-h', 'localhost', '-uroot', '-proot']
       interval: 5s
@@ -21,6 +21,7 @@ services:
       MYSQL_PASSWORD: supplycast
     ports: ['${TEST_DB_PORT:-3307}:3306']
     tmpfs: [/var/lib/mysql]
+    volumes: [./docker/init.sql:/docker-entrypoint-initdb.d/init.sql:ro]
     healthcheck:
       test: ['CMD', 'mysqladmin', 'ping', '-h', 'localhost', '-uroot', '-proot']
       interval: 5s

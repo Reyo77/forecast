@@ -4,7 +4,10 @@ import { z } from 'zod';
 import { createApp } from './app';
 import { errorHandler, HttpError } from './middleware/errors';
 
-const app = createApp({ APP_URL: 'http://localhost:5173' });
+const app = createApp({
+  APP_URL: 'http://localhost:5173',
+  JWT_ACCESS_SECRET: 'test-access-secret',
+});
 
 describe('app', () => {
   it('GET /health returns 200', async () => {

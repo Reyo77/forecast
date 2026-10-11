@@ -6,6 +6,7 @@ export default tseslint.config(
   {
     ignores: [
       '**/*.cjs',
+      'apps/api/tests/*.js',
       'apps/api/jest.config.js',
       '**/dist/**',
       '**/node_modules/**',

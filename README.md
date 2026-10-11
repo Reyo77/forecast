@@ -23,6 +23,12 @@ npm run dev                 # API on :4000, web on :5173
 
 First time only: `npx playwright install chromium`.
 
+## Auth (Feature 1.1)
+
+`POST /auth/signup | login | refresh | logout | change-password`, `GET /auth/me`. Access token (15 min JWT) is kept in memory by the web app; the rotating refresh token lives in an httpOnly, SameSite=strict cookie scoped to `/auth` (the Vite dev proxy rewrites it to `/api/auth`). Reusing a rotated refresh token revokes all of that user's sessions. 5 failed logins lock the account for 15 minutes.
+
+Setup after `docker compose up -d`: `npm run db:migrate` then `npm run db:seed` (creates the Super Admin from `SUPER_ADMIN_EMAIL`/`SUPER_ADMIN_PASSWORD`). API tests run against the test database (`DATABASE_URL_TEST`) and apply migrations automatically.
+
 ## Layout
 
 `apps/api` (Express + Prisma), `apps/web` (React + Vite), `apps/e2e` (Playwright), `packages/shared` (Zod schemas/types).

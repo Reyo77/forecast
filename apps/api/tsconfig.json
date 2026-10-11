@@ -4,8 +4,7 @@
     "module": "CommonJS",
     "moduleResolution": "Node",
     "types": ["node", "jest"],
-    "outDir": "dist",
-    "rootDir": "."
+    "outDir": "dist"
   },
-  "include": ["src", "tests"]
+  "include": ["src", "tests", "prisma/seed.ts"]
 }

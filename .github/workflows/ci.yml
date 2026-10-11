@@ -5,7 +5,8 @@ on:
   pull_request:
 
 env:
-  DATABASE_URL: mysql://supplycast:supplycast@localhost:3306/supplycast
+  # CI has a single MySQL service; dev and test share it.
+  DATABASE_URL: mysql://supplycast:supplycast@localhost:3307/supplycast_test
   DATABASE_URL_TEST: mysql://supplycast:supplycast@localhost:3307/supplycast_test
   JWT_ACCESS_SECRET: ci-access-secret
   JWT_REFRESH_SECRET: ci-refresh-secret
@@ -40,6 +41,8 @@ jobs:
           cache: npm
       - run: npm ci
       - run: npx prisma generate
+        working-directory: apps/api
+      - run: npx prisma migrate deploy
         working-directory: apps/api
       - run: npm run lint
       - run: npm run typecheck

@@ -12,6 +12,7 @@ export default defineConfig(({ mode }) => {
       proxy: {
         '/api': {
           target: env.API_URL ?? 'http://localhost:4000',
+          cookiePathRewrite: { '/auth': '/api/auth' },
           rewrite: (p) => p.replace(/^\/api/, ''),
         },
       },
