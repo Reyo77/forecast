@@ -11,6 +11,11 @@ import { AppLayout } from './components/AppLayout';
 import { HomePage } from './routes/HomePage';
 import { TeamPage } from './features/team/TeamPage';
 import { AuditLogPage } from './features/audit/AuditLogPage';
+import { ProductsPage } from './features/masterdata/ProductsPage';
+import { ProductDetailPage } from './features/masterdata/ProductDetailPage';
+import { LocationsPage } from './features/masterdata/LocationsPage';
+import { SuppliersPage } from './features/masterdata/SuppliersPage';
+import { InventoryPage } from './features/masterdata/InventoryPage';
 import { PricingPage } from './features/billing/PricingPage';
 import { BillingPage } from './features/billing/BillingPage';
 import { InvoicePage, InvoicesPage } from './features/billing/InvoicesPage';
@@ -32,6 +37,13 @@ export function App() {
           <Route element={<AppLayout />}>
             <Route path="/" element={<HomePage />} />
             <Route path="/change-password" element={<ChangePasswordPage />} />
+            <Route element={<RequirePermission permission="masterdata:read" />}>
+              <Route path="/products" element={<ProductsPage />} />
+              <Route path="/products/:id" element={<ProductDetailPage />} />
+              <Route path="/locations" element={<LocationsPage />} />
+              <Route path="/suppliers" element={<SuppliersPage />} />
+              <Route path="/inventory" element={<InventoryPage />} />
+            </Route>
             <Route element={<RequirePermission permission="team:read" />}>
               <Route path="/team" element={<TeamPage />} />
             </Route>

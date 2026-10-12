@@ -15,6 +15,14 @@ export const TENANT_SCOPED_MODELS = new Set<string>([
   'Notification',
   'Job',
   'AiRequest',
+  'Category',
+  'Product',
+  'Location',
+  'Supplier',
+  'SupplierProduct',
+  'BomItem',
+  'InventoryLevel',
+  'OpenOrder',
 ]);
 
 const WHERE_OPS = new Set([

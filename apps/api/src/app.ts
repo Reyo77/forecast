@@ -11,6 +11,8 @@ import { authRouter } from './modules/auth/routes';
 import { usersRouter } from './modules/users/routes';
 import { adminRouter } from './modules/admin/routes';
 import { billingRouter } from './modules/billing/routes';
+import { catalogRouter } from './modules/masterdata/catalog';
+import { supplyRouter } from './modules/masterdata/supply';
 import { auditRouter } from './modules/audit/routes';
 
 export type AppConfig = Pick<Env, 'APP_URL' | 'JWT_ACCESS_SECRET'> & {
@@ -48,6 +50,8 @@ export function createApp(env: AppConfig, options: AppOptions = {}) {
 
   app.use(usersRouter({ guards, appUrl: env.APP_URL }));
   app.use('/audit-logs', auditRouter(guards));
+  app.use(catalogRouter(guards));
+  app.use(supplyRouter(guards));
   app.use(
     '/admin',
     adminRouter({

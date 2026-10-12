@@ -22,21 +22,29 @@ enum Role {
 }
 
 model Tenant {
-  id            String         @id @default(cuid())
-  name          String
-  slug          String         @unique
-  status        TenantStatus   @default(ACTIVE)
-  createdAt     DateTime       @default(now())
-  updatedAt     DateTime       @updatedAt
-  users         User[]
-  invites       Invite[]
-  auditLogs     AuditLog[]
-  subscription  Subscription?
-  invoices      Invoice[]
-  usageCounters UsageCounter[]
-  notifications Notification[]
-  aiRequests    AiRequest[]
-  jobs          Job[]
+  id               String            @id @default(cuid())
+  name             String
+  slug             String            @unique
+  status           TenantStatus      @default(ACTIVE)
+  createdAt        DateTime          @default(now())
+  updatedAt        DateTime          @updatedAt
+  users            User[]
+  invites          Invite[]
+  auditLogs        AuditLog[]
+  subscription     Subscription?
+  invoices         Invoice[]
+  usageCounters    UsageCounter[]
+  notifications    Notification[]
+  aiRequests       AiRequest[]
+  jobs             Job[]
+  categories       Category[]
+  products         Product[]
+  locations        Location[]
+  suppliers        Supplier[]
+  supplierProducts SupplierProduct[]
+  bomItems         BomItem[]
+  inventoryLevels  InventoryLevel[]
+  openOrders       OpenOrder[]
 }
 
 model User {
@@ -264,4 +272,150 @@ model AiRequest {
   updatedAt    DateTime @updatedAt
 
   @@index([tenantId, createdAt])
+}
+
+enum LocationType {
+  WAREHOUSE
+  STORE
+  PLANT
+}
+
+model Category {
+  id        String     @id @default(cuid())
+  tenantId  String
+  tenant    Tenant     @relation(fields: [tenantId], references: [id], onDelete: Cascade)
+  name      String
+  parentId  String?
+  parent    Category?  @relation("CategoryTree", fields: [parentId], references: [id], onDelete: Restrict)
+  children  Category[] @relation("CategoryTree")
+  products  Product[]
+  createdAt DateTime   @default(now())
+  updatedAt DateTime   @updatedAt
+
+  @@index([tenantId])
+}
+
+model Product {
+  id               String            @id @default(cuid())
+  tenantId         String
+  tenant           Tenant            @relation(fields: [tenantId], references: [id], onDelete: Cascade)
+  sku              String
+  name             String
+  categoryId       String?
+  category         Category?         @relation(fields: [categoryId], references: [id], onDelete: SetNull)
+  unitCostCents    Int               @default(0)
+  unitPriceCents   Int               @default(0)
+  isComponent      Boolean           @default(false)
+  isActive         Boolean           @default(true)
+  createdAt        DateTime          @default(now())
+  updatedAt        DateTime          @updatedAt
+  supplierProducts SupplierProduct[]
+  bomAsParent      BomItem[]         @relation("BomParent")
+  bomAsComponent   BomItem[]         @relation("BomComponent")
+  inventoryLevels  InventoryLevel[]
+  openOrders       OpenOrder[]
+
+  @@unique([tenantId, sku])
+  @@index([tenantId, categoryId])
+}
+
+model Location {
+  id              String           @id @default(cuid())
+  tenantId        String
+  tenant          Tenant           @relation(fields: [tenantId], references: [id], onDelete: Cascade)
+  code            String
+  name            String
+  type            LocationType     @default(WAREHOUSE)
+  createdAt       DateTime         @default(now())
+  updatedAt       DateTime         @updatedAt
+  inventoryLevels InventoryLevel[]
+  openOrders      OpenOrder[]
+
+  @@unique([tenantId, code])
+}
+
+model Supplier {
+  id                  String            @id @default(cuid())
+  tenantId            String
+  tenant              Tenant            @relation(fields: [tenantId], references: [id], onDelete: Cascade)
+  name                String
+  defaultLeadTimeDays Int
+  reliabilityPct      Decimal           @default(95) @db.Decimal(5, 2)
+  createdAt           DateTime          @default(now())
+  updatedAt           DateTime          @updatedAt
+  products            SupplierProduct[]
+  openOrders          OpenOrder[]
+
+  @@index([tenantId])
+}
+
+model SupplierProduct {
+  id             String   @id @default(cuid())
+  tenantId       String
+  tenant         Tenant   @relation(fields: [tenantId], references: [id], onDelete: Cascade)
+  supplierId     String
+  supplier       Supplier @relation(fields: [supplierId], references: [id], onDelete: Cascade)
+  productId      String
+  product        Product  @relation(fields: [productId], references: [id], onDelete: Cascade)
+  leadTimeDays   Int
+  minOrderQty    Decimal  @default(1) @db.Decimal(14, 3)
+  unitCostCents  Int      @default(0)
+  weeklyCapacity Decimal? @db.Decimal(14, 3)
+  isPrimary      Boolean  @default(false)
+  createdAt      DateTime @default(now())
+  updatedAt      DateTime @updatedAt
+
+  @@unique([supplierId, productId])
+  @@index([tenantId, productId])
+}
+
+model BomItem {
+  id                 String   @id @default(cuid())
+  tenantId           String
+  tenant             Tenant   @relation(fields: [tenantId], references: [id], onDelete: Cascade)
+  parentProductId    String
+  parent             Product  @relation("BomParent", fields: [parentProductId], references: [id], onDelete: Cascade)
+  componentProductId String
+  component          Product  @relation("BomComponent", fields: [componentProductId], references: [id], onDelete: Cascade)
+  quantityPer        Decimal  @db.Decimal(14, 4)
+  createdAt          DateTime @default(now())
+  updatedAt          DateTime @updatedAt
+
+  @@unique([parentProductId, componentProductId])
+  @@index([tenantId])
+}
+
+model InventoryLevel {
+  id          String   @id @default(cuid())
+  tenantId    String
+  tenant      Tenant   @relation(fields: [tenantId], references: [id], onDelete: Cascade)
+  productId   String
+  product     Product  @relation(fields: [productId], references: [id], onDelete: Cascade)
+  locationId  String
+  location    Location @relation(fields: [locationId], references: [id], onDelete: Cascade)
+  onHand      Decimal  @db.Decimal(14, 3)
+  safetyStock Decimal  @default(0) @db.Decimal(14, 3)
+  asOfDate    DateTime @default(now())
+  createdAt   DateTime @default(now())
+  updatedAt   DateTime @updatedAt
+
+  @@unique([tenantId, productId, locationId])
+}
+
+model OpenOrder {
+  id           String    @id @default(cuid())
+  tenantId     String
+  tenant       Tenant    @relation(fields: [tenantId], references: [id], onDelete: Cascade)
+  productId    String
+  product      Product   @relation(fields: [productId], references: [id], onDelete: Cascade)
+  locationId   String
+  location     Location  @relation(fields: [locationId], references: [id], onDelete: Cascade)
+  supplierId   String?
+  supplier     Supplier? @relation(fields: [supplierId], references: [id], onDelete: SetNull)
+  quantity     Decimal   @db.Decimal(14, 3)
+  expectedDate DateTime
+  createdAt    DateTime  @default(now())
+  updatedAt    DateTime  @updatedAt
+
+  @@index([tenantId, expectedDate])
 }

@@ -7,6 +7,10 @@ import { useCan } from '../features/auth/Can';
 
 export const NAV_ITEMS: { to: string; label: string; permission: Permission }[] = [
   { to: '/', label: 'Home', permission: 'dashboard:read' },
+  { to: '/products', label: 'Products', permission: 'masterdata:read' },
+  { to: '/locations', label: 'Locations', permission: 'masterdata:read' },
+  { to: '/suppliers', label: 'Suppliers', permission: 'masterdata:read' },
+  { to: '/inventory', label: 'Inventory', permission: 'masterdata:read' },
   { to: '/team', label: 'Team', permission: 'team:read' },
   { to: '/billing', label: 'Billing', permission: 'billing:read' },
   { to: '/audit-log', label: 'Audit log', permission: 'audit:read' },
