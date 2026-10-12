@@ -9,6 +9,7 @@ import type { AiClient } from './ai/types';
 import { registerCoreJobHandlers, scheduleRecurringJobs } from './jobs/handlers';
 import { startWorker } from './jobs/runner';
 import { LogMailer, SmtpMailer } from './email/mailers';
+import { StripeGateway } from './modules/billing/gateway';
 import { ensureDefaultPlans } from './modules/billing/plans';
 
 dotenv.config({ path: process.env.ENV_FILE ?? path.resolve(__dirname, '../../../.env') });
@@ -37,10 +38,16 @@ try {
           from: env.EMAIL_FROM,
         })
       : new LogMailer();
-  createApp(env, { aiClient, mailer, loginRateLimitMax: env.AUTH_RATE_LIMIT_MAX }).listen(
-    env.PORT,
-    () => logger.info(`API listening on :${env.PORT}`),
-  );
+  const paymentGateway =
+    env.PAYMENT_PROVIDER === 'stripe'
+      ? new StripeGateway(env.STRIPE_SECRET_KEY!, env.STRIPE_WEBHOOK_SECRET!)
+      : undefined;
+  createApp(env, {
+    aiClient,
+    mailer,
+    paymentGateway,
+    loginRateLimitMax: env.AUTH_RATE_LIMIT_MAX,
+  }).listen(env.PORT, () => logger.info(`API listening on :${env.PORT}`));
   registerCoreJobHandlers();
   void ensureDefaultPlans()
     .then(scheduleRecurringJobs)

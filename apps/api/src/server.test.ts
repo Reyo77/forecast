@@ -6,7 +6,13 @@ describe('server startup', () => {
     const api = path.resolve(__dirname, '..');
     const result = spawnSync(path.resolve(api, '../../node_modules/.bin/tsx'), ['src/server.ts'], {
       cwd: api,
-      env: { PATH: process.env.PATH, HOME: process.env.HOME, ENV_FILE: '/nonexistent/.env' },
+      env: {
+        PATH: process.env.PATH,
+        HOME: process.env.HOME,
+        ENV_FILE: '/nonexistent/.env',
+        // Prisma auto-loads a local .env on import; an explicitly empty secret still fails validation.
+        JWT_ACCESS_SECRET: '',
+      },
       encoding: 'utf8',
     });
     expect(result.status).toBe(1);

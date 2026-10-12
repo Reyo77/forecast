@@ -29,6 +29,7 @@ const PUBLIC = new Set([
   'POST /auth/logout',
   'POST /auth/reset-password',
   'POST /invites/accept',
+  'POST /billing/webhook',
 ]);
 /** Authenticated routes that apply to the caller's own account and need no special permission. */
 const SELF_SERVICE = new Set(['GET /auth/me', 'PATCH /auth/me', 'POST /auth/change-password']);

@@ -14,7 +14,7 @@ export async function nextInvoiceNumber(tx: Tx, now: Date): Promise<string> {
   return formatInvoiceNumber(year, row.last);
 }
 
-/** Payments are simulated, so every invoice is created already PAID. */
+/** Invoices are only created once payment succeeded (simulated or confirmed by the gateway), so they are PAID. */
 export async function createPaidInvoice(
   tx: Tx,
   args: {
@@ -25,6 +25,8 @@ export async function createPaidInvoice(
     periodEnd: Date;
     now: Date;
     description?: string;
+    /** Payment provider reference when the charge went through a real gateway. */
+    externalRef?: string;
   },
 ): Promise<Invoice> {
   return tx.invoice.create({
@@ -39,6 +41,7 @@ export async function createPaidInvoice(
       periodStart: args.periodStart,
       periodEnd: args.periodEnd,
       paidAt: args.now,
+      externalRef: args.externalRef ?? null,
     } as never,
   });
 }

@@ -1,9 +1,9 @@
-import { useState } from 'react';
+import { useEffect, useRef, useState } from 'react';
 import { useMutation, useQuery, useQueryClient } from '@tanstack/react-query';
-import { Link } from 'react-router-dom';
+import { Link, useSearchParams } from 'react-router-dom';
 import { METRIC_LABELS, type PlanDto } from '@supplycast/shared';
 import { ApiError } from '../../api/client';
-import { formatDate, formatMoney } from '../../lib';
+import { formatDate, formatMoney, redirectTo } from '../../lib';
 import { Can, useCan } from '../auth/Can';
 import { billingApi, type ChangePlanResponse } from './api';
 import { PlanCards } from './PlanCards';
@@ -25,7 +25,38 @@ export function BillingPage() {
   const [error, setError] = useState<{ message: string; overages?: Overage[] } | null>(null);
   const [busy, setBusy] = useState<string | null>(null);
 
+  const [params] = useSearchParams();
+  const returned = params.get('checkout');
+  // After paying at the provider the plan is applied by a webhook; poll briefly until it shows.
+  const startPlan = useRef<string | null>(null);
+  const [confirmed, setConfirmed] = useState(false);
+  useEffect(() => {
+    if (sub.data && startPlan.current === null)
+      startPlan.current = `${sub.data.plan.code}|${sub.data.status}`;
+    if (
+      sub.data &&
+      returned === 'success' &&
+      startPlan.current !== `${sub.data.plan.code}|${sub.data.status}`
+    ) {
+      setConfirmed(true);
+    }
+  }, [sub.data, returned]);
+  useEffect(() => {
+    if (returned !== 'success' || confirmed) return;
+    let tries = 0;
+    const id = setInterval(() => {
+      tries += 1;
+      void qc.invalidateQueries({ queryKey: ['billing', 'subscription'] });
+      if (tries >= 20) clearInterval(id);
+    }, 2000);
+    return () => clearInterval(id);
+  }, [returned, confirmed, qc]);
+
   const done = (r: ChangePlanResponse) => {
+    if (r.result === 'CHECKOUT_REQUIRED' && r.checkoutUrl) {
+      redirectTo(r.checkoutUrl);
+      return; // keep the button busy while the browser leaves
+    }
     setResult(r);
     setError(null);
     setBusy(null);
@@ -62,12 +93,39 @@ export function BillingPage() {
     <section className="space-y-6">
       <h1 className="text-2xl font-bold">Billing</h1>
 
-      <p
-        className="rounded border border-blue-200 bg-blue-50 p-2 text-sm text-blue-800"
-        data-testid="simulated-notice"
-      >
-        Payments are simulated. Choosing a plan applies it instantly — no card is charged.
-      </p>
+      {s.simulatedPayments ? (
+        <p
+          className="rounded border border-blue-200 bg-blue-50 p-2 text-sm text-blue-800"
+          data-testid="simulated-notice"
+        >
+          Payments are simulated. Choosing a plan applies it instantly — no card is charged.
+        </p>
+      ) : (
+        <p className="text-sm text-gray-500" data-testid="secure-notice">
+          🔒 Upgrades are paid on a secure hosted checkout page. We never see your card details.
+        </p>
+      )}
+
+      {returned === 'success' && (
+        <p
+          role="status"
+          className="rounded border border-green-300 bg-green-50 p-3 text-sm text-green-900"
+          data-testid="checkout-return"
+        >
+          {confirmed
+            ? `Payment successful. You are now on ${s.plan.name}.`
+            : 'Thanks! We are confirming your payment. Your plan activates in a few seconds.'}
+        </p>
+      )}
+      {returned === 'cancelled' && (
+        <p
+          role="status"
+          className="rounded border border-amber-300 bg-amber-50 p-3 text-sm text-amber-900"
+          data-testid="checkout-cancelled"
+        >
+          Checkout cancelled. No payment was made.
+        </p>
+      )}
 
       {s.status === 'TRIALING' && (
         <p

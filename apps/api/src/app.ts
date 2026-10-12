@@ -26,6 +26,7 @@ import { insightsRouter } from './modules/insights/routes';
 import { auditRouter } from './modules/audit/routes';
 import { LogMailer } from './email/mailers';
 import type { Mailer } from './email/types';
+import type { PaymentGateway } from './modules/billing/gateway';
 
 export type AppConfig = Pick<Env, 'APP_URL' | 'JWT_ACCESS_SECRET'> & {
   NODE_ENV?: Env['NODE_ENV'];
@@ -39,6 +40,8 @@ export interface AppOptions {
   aiTimeoutMs?: number;
   /** Where transactional email goes. Defaults to the log driver (nothing is delivered). */
   mailer?: Mailer;
+  /** Hosted-checkout payment provider. Omit for simulated (instant) payments. */
+  paymentGateway?: PaymentGateway;
 }
 
 export function createApp(env: AppConfig, options: AppOptions = {}) {
@@ -48,6 +51,8 @@ export function createApp(env: AppConfig, options: AppOptions = {}) {
   app.use(pinoHttp({ logger }));
   app.use(helmet());
   app.use(cors({ origin: [env.APP_URL], credentials: true }));
+  // Payment webhooks need the exact bytes to verify their signature, so they skip JSON parsing.
+  app.use('/billing/webhook', express.raw({ type: '*/*', limit: '1mb' }));
   app.use(express.json({ limit: '1mb' }));
   app.use(cookieParser());
 
@@ -95,7 +100,14 @@ export function createApp(env: AppConfig, options: AppOptions = {}) {
       simulatedPayments: env.SIMULATED_PAYMENTS ?? true,
     }),
   );
-  app.use(billingRouter({ guards, simulatedPayments: env.SIMULATED_PAYMENTS ?? true }));
+  app.use(
+    billingRouter({
+      guards,
+      simulatedPayments: options.paymentGateway ? false : (env.SIMULATED_PAYMENTS ?? true),
+      gateway: options.paymentGateway,
+      appUrl: env.APP_URL,
+    }),
+  );
 
   app.use(notFoundHandler);
   app.use(errorHandler);

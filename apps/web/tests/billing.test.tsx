@@ -1,6 +1,7 @@
 import { screen, waitFor, within } from '@testing-library/react';
 import userEvent from '@testing-library/user-event';
 import { afterEach, describe, expect, it, vi } from 'vitest';
+import * as lib from '../src/lib';
 import {
   calls,
   json,
@@ -13,7 +14,16 @@ import {
   renderApp,
 } from './utils';
 
-afterEach(() => vi.unstubAllGlobals());
+vi.mock('../src/lib', async (orig) => ({
+  ...(await orig<typeof import('../src/lib')>()),
+  redirectTo: vi.fn(),
+}));
+
+afterEach(() => {
+  vi.unstubAllGlobals();
+  vi.useRealTimers();
+  vi.mocked(lib.redirectTo).mockClear();
+});
 
 const invoice = {
   id: 'inv1',
@@ -214,5 +224,73 @@ describe('invoices', () => {
     });
     renderApp('/billing/invoices');
     expect(await screen.findByText(/No invoices yet/)).toBeInTheDocument();
+  });
+});
+
+describe('billing page with a real payment provider', () => {
+  const liveSub = (over: Record<string, unknown> = {}) =>
+    makeSub({ simulatedPayments: false, ...over });
+  const setupLive = (subs: unknown[], extra: Record<string, () => Promise<Response>> = {}) => {
+    let i = 0;
+    return mockApi({
+      ...loggedInAs(makeUser()),
+      'GET /billing/subscription': () => json(200, subs[Math.min(i++, subs.length - 1)]),
+      'GET /plans': () => json(200, { items: PLANS }),
+      ...extra,
+    });
+  };
+
+  it('shows the secure-checkout note instead of the simulated notice', async () => {
+    setupLive([liveSub()]);
+    renderApp('/billing');
+    expect(await screen.findByTestId('secure-notice')).toHaveTextContent('secure hosted checkout');
+    expect(screen.queryByTestId('simulated-notice')).not.toBeInTheDocument();
+  });
+
+  it('sends the browser to the checkout url when a purchase needs payment', async () => {
+    const fn = setupLive([liveSub()], {
+      'POST /billing/change-plan': () =>
+        json(200, {
+          result: 'CHECKOUT_REQUIRED',
+          checkoutUrl: 'https://checkout.stripe.com/c/cs_1',
+          message: 'Continue to secure checkout for the Pro plan.',
+          subscription: liveSub(),
+        }),
+    });
+    renderApp('/billing');
+    await userEvent.click(await within(await screen.findByTestId('plan-pro')).findByRole('button'));
+    await waitFor(() =>
+      expect(lib.redirectTo).toHaveBeenCalledWith('https://checkout.stripe.com/c/cs_1'),
+    );
+    expect(calls(fn, 'POST /billing/change-plan')).toHaveLength(1);
+    expect(screen.queryByTestId('change-result')).not.toBeInTheDocument();
+  });
+
+  it('after returning from checkout it confirms once the webhook has activated the plan', async () => {
+    vi.useFakeTimers({ toFake: ['setInterval', 'clearInterval'] });
+    setupLive([
+      liveSub(),
+      liveSub(),
+      liveSub({ status: 'ACTIVE', plan: PLANS[2], trialDaysLeft: null }),
+    ]);
+    renderApp('/billing?checkout=success');
+    expect(await screen.findByTestId('checkout-return')).toHaveTextContent(
+      'confirming your payment',
+    );
+    await vi.advanceTimersByTimeAsync(2100);
+    await vi.advanceTimersByTimeAsync(2100);
+    await waitFor(() =>
+      expect(screen.getByTestId('checkout-return')).toHaveTextContent(
+        'Payment successful. You are now on Pro',
+      ),
+    );
+  });
+
+  it('shows a cancelled notice when the user backs out of checkout', async () => {
+    setupLive([liveSub()]);
+    renderApp('/billing?checkout=cancelled');
+    expect(await screen.findByTestId('checkout-cancelled')).toHaveTextContent(
+      'No payment was made',
+    );
   });
 });

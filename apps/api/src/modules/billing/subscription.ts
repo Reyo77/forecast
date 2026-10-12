@@ -121,10 +121,33 @@ function assertSelectable(plan: Plan | null): asserts plan is Plan {
   }
 }
 
+/**
+ * The plan that must be paid for before it can take effect (a trial → paid purchase or a more
+ * expensive plan), or null when the change needs no payment (downgrade, Free, undo, no-op).
+ */
+export async function planRequiringPayment(
+  tenantId: string,
+  planCode: string,
+): Promise<Plan | null> {
+  await ensureDefaultPlans();
+  const target = await getPlanByCode(planCode);
+  assertSelectable(target);
+  const sub = await prisma.subscription.findUnique({
+    where: { tenantId },
+    include: { plan: true },
+  });
+  if (!sub) throw new HttpError(404, 'NOT_FOUND', 'No subscription found');
+  if (target.priceCents <= 0) return null;
+  if (sub.status === 'TRIALING') return target;
+  return target.id !== sub.planId && target.priceCents > sub.plan.priceCents ? target : null;
+}
+
 export async function changePlan(
   tenantId: string,
   planCode: string,
   now = new Date(),
+  /** Set when a real gateway already collected the money; the reference lands on the invoice. */
+  payment?: { reference: string },
 ): Promise<ChangeResult> {
   await ensureDefaultPlans();
   const target = await getPlanByCode(planCode);
@@ -159,6 +182,7 @@ export async function changePlan(
               periodStart: now,
               periodEnd,
               now,
+              externalRef: payment?.reference,
             })
           : null;
       return { updated, invoice };
@@ -172,7 +196,7 @@ export async function changePlan(
         tenantId,
         'billing.plan_changed',
         `You are now on ${target.name}`,
-        'Payment successful (simulated).',
+        payment ? 'Payment successful.' : 'Payment successful (simulated).',
       );
       return {
         result: 'APPLIED',
@@ -206,7 +230,7 @@ export async function changePlan(
       tenantId,
       'billing.plan_changed',
       `You are now on ${target.name}`,
-      'Payment successful (simulated).',
+      payment ? 'Payment successful.' : 'Payment successful (simulated).',
     );
     return {
       result: 'APPLIED',

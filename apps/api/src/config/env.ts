@@ -27,11 +27,26 @@ export const envSchema = z
       .transform((v) => v === 'true'),
     SMTP_USER: z.string().optional(),
     SMTP_PASS: z.string().optional(),
+    /** `simulated` applies a chosen plan instantly; `stripe` sends upgrades through Stripe Checkout. */
+    PAYMENT_PROVIDER: z.enum(['simulated', 'stripe']).default('simulated'),
+    STRIPE_SECRET_KEY: z.string().optional(),
+    STRIPE_WEBHOOK_SECRET: z.string().optional(),
     SIMULATED_PAYMENTS: z.enum(['true', 'false']).transform((v) => v === 'true'),
     SUPER_ADMIN_EMAIL: z.string().email(),
     SUPER_ADMIN_PASSWORD: z.string().min(1),
   })
   .superRefine((v, ctx) => {
+    if (v.PAYMENT_PROVIDER === 'stripe') {
+      for (const k of ['STRIPE_SECRET_KEY', 'STRIPE_WEBHOOK_SECRET'] as const) {
+        if (!v[k]) {
+          ctx.addIssue({
+            code: 'custom',
+            path: [k],
+            message: `${k} is required when PAYMENT_PROVIDER=stripe`,
+          });
+        }
+      }
+    }
     if (v.EMAIL_PROVIDER === 'smtp' && !v.SMTP_HOST) {
       ctx.addIssue({
         code: 'custom',

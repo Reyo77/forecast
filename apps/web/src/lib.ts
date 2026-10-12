@@ -1,3 +1,6 @@
+/** Full-page navigation (wrapped so tests can replace it). */
+export const redirectTo = (url: string) => window.location.assign(url);
+
 export const formatMoney = (cents: number) =>
   new Intl.NumberFormat('en-US', {
     style: 'currency',

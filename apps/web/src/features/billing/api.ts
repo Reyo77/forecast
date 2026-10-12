@@ -2,7 +2,9 @@ import type { InvoiceDto, Paged, PlanDto, SubscriptionDto } from '@supplycast/sh
 import { api } from '../../api/client';
 
 export interface ChangePlanResponse {
-  result: 'APPLIED' | 'SCHEDULED' | 'UNCHANGED';
+  result: 'APPLIED' | 'SCHEDULED' | 'UNCHANGED' | 'CHECKOUT_REQUIRED';
+  /** Where to pay (only with CHECKOUT_REQUIRED). */
+  checkoutUrl?: string;
   paymentStatus?: 'SUCCEEDED';
   message: string;
   invoice?: InvoiceDto;
