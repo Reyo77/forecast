@@ -29,6 +29,10 @@ export const TENANT_SCOPED_MODELS = new Set<string>([
   'ForecastResult',
   'ForecastAccuracy',
   'ForecastOverride',
+  'Scenario',
+  'ScenarioLever',
+  'ScenarioRun',
+  'ScenarioResult',
 ]);
 
 const WHERE_OPS = new Set([

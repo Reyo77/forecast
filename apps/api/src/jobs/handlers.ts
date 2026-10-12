@@ -2,6 +2,7 @@ import { DAY_MS } from '../lib/time';
 import { runBillingMaintenance } from '../modules/billing/subscription';
 import { processSalesImport } from '../modules/sales/service';
 import { FORECAST_RUN_JOB, processForecastRun } from '../modules/forecast/service';
+import { SCENARIO_RUN_JOB, processScenarioRun } from '../modules/scenarios/service';
 import { enqueueJob, ensureRecurringJob, registerJobHandler } from './runner';
 
 export const BILLING_DAILY = 'billing.daily';
@@ -9,6 +10,9 @@ export const BILLING_DAILY = 'billing.daily';
 export const SALES_IMPORT = 'sales.import';
 
 export function registerCoreJobHandlers() {
+  registerJobHandler(SCENARIO_RUN_JOB, async (job, { now }) => {
+    await processScenarioRun((job.payload as { scenarioRunId: string }).scenarioRunId, now);
+  });
   registerJobHandler(FORECAST_RUN_JOB, async (job, { now }) => {
     await processForecastRun((job.payload as { runId: string }).runId, { now });
   });

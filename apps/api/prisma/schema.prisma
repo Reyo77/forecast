@@ -51,6 +51,10 @@ model Tenant {
   forecastResults    ForecastResult[]
   forecastAccuracies ForecastAccuracy[]
   forecastOverrides  ForecastOverride[]
+  scenarios          Scenario[]
+  scenarioLevers     ScenarioLever[]
+  scenarioRuns       ScenarioRun[]
+  scenarioResults    ScenarioResult[]
 }
 
 model User {
@@ -515,6 +519,7 @@ model ForecastRun {
   updatedAt    DateTime           @updatedAt
   results      ForecastResult[]
   accuracies   ForecastAccuracy[]
+  scenarios    Scenario[]
 
   @@index([tenantId, createdAt])
 }
@@ -581,4 +586,86 @@ model ForecastOverride {
 
   @@unique([tenantId, productId, locationId, weekStart])
   @@index([tenantId, weekStart])
+}
+
+enum ScenarioStatus {
+  DRAFT
+  RUNNING
+  READY
+  FAILED
+}
+
+model Scenario {
+  id                String          @id @default(cuid())
+  tenantId          String
+  tenant            Tenant          @relation(fields: [tenantId], references: [id], onDelete: Cascade)
+  name              String
+  description       String?         @db.Text
+  baseForecastRunId String
+  baseForecastRun   ForecastRun     @relation(fields: [baseForecastRunId], references: [id], onDelete: Restrict)
+  status            ScenarioStatus  @default(DRAFT)
+  createdBy         String?
+  createdAt         DateTime        @default(now())
+  updatedAt         DateTime        @updatedAt
+  levers            ScenarioLever[]
+  runs              ScenarioRun[]
+
+  @@index([tenantId, createdAt])
+}
+
+model ScenarioLever {
+  id         String   @id @default(cuid())
+  tenantId   String
+  tenant     Tenant   @relation(fields: [tenantId], references: [id], onDelete: Cascade)
+  scenarioId String
+  scenario   Scenario @relation(fields: [scenarioId], references: [id], onDelete: Cascade)
+  type       String
+  target     Json
+  params     Json
+  createdAt  DateTime @default(now())
+  updatedAt  DateTime @updatedAt
+
+  @@index([scenarioId])
+}
+
+model ScenarioRun {
+  id            String           @id @default(cuid())
+  tenantId      String
+  tenant        Tenant           @relation(fields: [tenantId], references: [id], onDelete: Cascade)
+  scenarioId    String
+  scenario      Scenario         @relation(fields: [scenarioId], references: [id], onDelete: Cascade)
+  status        RunStatus        @default(PENDING)
+  levers        Json
+  kpis          Json?
+  atRisk        Json?
+  totals        Json?
+  plannedOrders Json?
+  error         String?          @db.Text
+  startedAt     DateTime?
+  finishedAt    DateTime?
+  createdBy     String?
+  createdAt     DateTime         @default(now())
+  updatedAt     DateTime         @updatedAt
+  results       ScenarioResult[]
+
+  @@index([scenarioId, createdAt])
+}
+
+model ScenarioResult {
+  id              String      @id @default(cuid())
+  tenantId        String
+  tenant          Tenant      @relation(fields: [tenantId], references: [id], onDelete: Cascade)
+  scenarioRunId   String
+  scenarioRun     ScenarioRun @relation(fields: [scenarioRunId], references: [id], onDelete: Cascade)
+  variant         String
+  productId       String
+  locationId      String
+  weekStart       DateTime    @db.Date
+  demand          Decimal     @db.Decimal(14, 3)
+  receipts        Decimal     @db.Decimal(14, 3)
+  projectedOnHand Decimal     @db.Decimal(14, 3)
+  shortage        Decimal     @db.Decimal(14, 3)
+
+  @@index([scenarioRunId, variant, productId, locationId])
+  @@index([tenantId])
 }

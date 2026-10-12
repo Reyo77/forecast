@@ -97,3 +97,39 @@ export function buildBomTree(edges: (BomEdge & { id?: string })[], rootId: strin
     });
   return build(rootId, 1, new Set([rootId]));
 }
+
+/**
+ * Adds component demand to a set of per-node weekly demand series. For every finished-product node
+ * (product|location) the parent's demand is exploded through the BOM into its (multi-level)
+ * components at the same location. Returns a new map; the input is not modified.
+ */
+export function explodeDemand(
+  edges: BomEdge[],
+  independent: Map<string, number[]>,
+  weeks: number,
+): Map<string, number[]> {
+  const out = new Map<string, number[]>();
+  const add = (key: string, series: number[]) => {
+    const cur = out.get(key) ?? new Array<number>(weeks).fill(0);
+    for (let t = 0; t < weeks; t++) cur[t]! += series[t] ?? 0;
+    out.set(key, cur);
+  };
+  const parentsWithBom = new Set(edges.map((e) => e.parentId));
+  const cache = new Map<string, Map<string, number>>();
+  for (const [key, series] of independent) {
+    add(key, series);
+    const [productId, locationId] = key.split('|') as [string, string];
+    if (!parentsWithBom.has(productId)) continue;
+    let comps = cache.get(productId);
+    if (!comps) {
+      comps = explodeBom(edges, productId, 1);
+      cache.set(productId, comps);
+    }
+    for (const [compId, perUnit] of comps)
+      add(
+        `${compId}|${locationId}`,
+        series.map((q) => q * perUnit),
+      );
+  }
+  return out;
+}

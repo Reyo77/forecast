@@ -386,7 +386,7 @@ describe('reading runs', () => {
       allowed: rolesWith('forecast:read'),
       roles: ['VIEWER', 'PLANNER'],
       body: undefined,
-    }).catch(() => undefined);
+    });
     void tid;
   });
 

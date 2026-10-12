@@ -15,6 +15,7 @@ import { catalogRouter } from './modules/masterdata/catalog';
 import { supplyRouter } from './modules/masterdata/supply';
 import { salesRouter } from './modules/sales/routes';
 import { forecastRouter } from './modules/forecast/routes';
+import { scenarioRouter } from './modules/scenarios/routes';
 import { auditRouter } from './modules/audit/routes';
 
 export type AppConfig = Pick<Env, 'APP_URL' | 'JWT_ACCESS_SECRET'> & {
@@ -56,6 +57,7 @@ export function createApp(env: AppConfig, options: AppOptions = {}) {
   app.use(supplyRouter(guards));
   app.use(salesRouter(guards));
   app.use(forecastRouter(guards));
+  app.use(scenarioRouter(guards));
   app.use(
     '/admin',
     adminRouter({
