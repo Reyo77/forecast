@@ -1,0 +1,6 @@
+sku,location_code,date,quantity,revenue
+SKU-A,WH-1,2025-01-06,10,100.00
+SKU-A,WH-1,2025-01-08,5,50.50
+SKU-A,WH-1,2025-01-12,2,20
+SKU-A,WH-1,2025-01-13,7,70.25
+SKU-B,WH-1,2025-01-07,3,

@@ -27,7 +27,14 @@ export function mockApi(routes: Record<string, Handler>) {
     const key = `${init?.method ?? 'GET'} ${path}`;
     const h = routes[key];
     if (!h) return json(404, { error: { code: 'NOT_FOUND', message: `no mock for ${key}` } });
-    const body = init?.body ? JSON.parse(init.body as string) : undefined;
+    let body: unknown;
+    if (init?.body) {
+      try {
+        body = JSON.parse(init.body as string);
+      } catch {
+        body = init.body; // raw text such as CSV
+      }
+    }
     return Promise.resolve(h(body, url));
   });
   vi.stubGlobal('fetch', fn);

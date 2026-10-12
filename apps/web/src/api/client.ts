@@ -28,15 +28,21 @@ export const tokenStore = {
   },
 };
 
-async function send(path: string, method: string, body?: unknown, token = accessToken) {
+async function send(
+  path: string,
+  method: string,
+  body?: unknown,
+  token = accessToken,
+  contentType?: string,
+) {
   return fetch(`/api${path}`, {
     method,
     credentials: 'include',
     headers: {
-      ...(body !== undefined && { 'Content-Type': 'application/json' }),
+      ...(body !== undefined && { 'Content-Type': contentType ?? 'application/json' }),
       ...(token && { Authorization: `Bearer ${token}` }),
     },
-    body: body === undefined ? undefined : JSON.stringify(body),
+    body: body === undefined ? undefined : contentType ? (body as string) : JSON.stringify(body),
   });
 }
 
@@ -84,4 +90,25 @@ export async function api<T>(path: string, method = 'GET', body?: unknown): Prom
     else onAuthLost?.();
   }
   return parse<T>(res);
+}
+
+/** POST a raw text body (e.g. CSV). */
+export async function apiText<T>(path: string, text: string, contentType = 'text/csv'): Promise<T> {
+  let res = await send(path, 'POST', text, accessToken, contentType);
+  if (res.status === 401 && (await refreshSession()))
+    res = await send(path, 'POST', text, accessToken, contentType);
+  return parse<T>(res);
+}
+
+/** Download a file with the auth header and hand it to the browser. */
+export async function downloadFile(path: string, filename: string): Promise<void> {
+  let res = await send(path, 'GET');
+  if (res.status === 401 && (await refreshSession())) res = await send(path, 'GET');
+  if (!res.ok) throw new ApiError(res.status, 'DOWNLOAD_FAILED', 'Download failed');
+  const url = URL.createObjectURL(await res.blob());
+  const a = document.createElement('a');
+  a.href = url;
+  a.download = filename;
+  a.click();
+  URL.revokeObjectURL(url);
 }

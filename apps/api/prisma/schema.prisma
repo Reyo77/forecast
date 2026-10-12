@@ -45,6 +45,8 @@ model Tenant {
   bomItems         BomItem[]
   inventoryLevels  InventoryLevel[]
   openOrders       OpenOrder[]
+  salesImports     SalesImport[]
+  salesRecords     SalesRecord[]
 }
 
 model User {
@@ -314,6 +316,7 @@ model Product {
   bomAsComponent   BomItem[]         @relation("BomComponent")
   inventoryLevels  InventoryLevel[]
   openOrders       OpenOrder[]
+  salesRecords     SalesRecord[]
 
   @@unique([tenantId, sku])
   @@index([tenantId, categoryId])
@@ -330,6 +333,7 @@ model Location {
   updatedAt       DateTime         @updatedAt
   inventoryLevels InventoryLevel[]
   openOrders      OpenOrder[]
+  salesRecords    SalesRecord[]
 
   @@unique([tenantId, code])
 }
@@ -418,4 +422,56 @@ model OpenOrder {
   updatedAt    DateTime  @updatedAt
 
   @@index([tenantId, expectedDate])
+}
+
+enum ImportStatus {
+  PREVIEW
+  QUEUED
+  PROCESSING
+  DONE
+  FAILED
+}
+
+model SalesImport {
+  id            String        @id @default(cuid())
+  tenantId      String
+  tenant        Tenant        @relation(fields: [tenantId], references: [id], onDelete: Cascade)
+  fileName      String
+  status        ImportStatus  @default(PREVIEW)
+  rowCount      Int           @default(0)
+  validRowCount Int           @default(0)
+  errorCount    Int           @default(0)
+  errors        Json?
+  previewRows   Json?
+  importedRows  Int           @default(0)
+  errorMessage  String?       @db.Text
+  rawCsv        String?       @db.LongText
+  createdBy     String?
+  committedAt   DateTime?
+  finishedAt    DateTime?
+  createdAt     DateTime      @default(now())
+  updatedAt     DateTime      @updatedAt
+  records       SalesRecord[]
+
+  @@index([tenantId, createdAt])
+}
+
+model SalesRecord {
+  id           String       @id @default(cuid())
+  tenantId     String
+  tenant       Tenant       @relation(fields: [tenantId], references: [id], onDelete: Cascade)
+  productId    String
+  product      Product      @relation(fields: [productId], references: [id], onDelete: Restrict)
+  locationId   String
+  location     Location     @relation(fields: [locationId], references: [id], onDelete: Restrict)
+  date         DateTime     @db.Date
+  quantity     Decimal      @db.Decimal(14, 3)
+  revenueCents Decimal      @default(0) @db.Decimal(18, 0)
+  importId     String?
+  import       SalesImport? @relation(fields: [importId], references: [id], onDelete: SetNull)
+  createdAt    DateTime     @default(now())
+  updatedAt    DateTime     @updatedAt
+
+  @@unique([tenantId, productId, locationId, date])
+  @@index([tenantId, date])
 }

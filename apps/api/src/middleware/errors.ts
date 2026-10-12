@@ -34,6 +34,15 @@ export const errorHandler: ErrorRequestHandler = (err, _req, res, _next) => {
     });
     return;
   }
+  if (err?.type === 'entity.too.large') {
+    res.status(413).json({
+      error: {
+        code: 'FILE_TOO_LARGE',
+        message: 'The uploaded file is too large (10 MB maximum)',
+      },
+    });
+    return;
+  }
   if (err?.type === 'entity.parse.failed') {
     res.status(400).json({ error: { code: 'INVALID_JSON', message: 'Malformed JSON body' } });
     return;

@@ -16,6 +16,8 @@ import { ProductDetailPage } from './features/masterdata/ProductDetailPage';
 import { LocationsPage } from './features/masterdata/LocationsPage';
 import { SuppliersPage } from './features/masterdata/SuppliersPage';
 import { InventoryPage } from './features/masterdata/InventoryPage';
+import { ImportPage } from './features/sales/ImportPage';
+import { ExplorerPage } from './features/sales/ExplorerPage';
 import { PricingPage } from './features/billing/PricingPage';
 import { BillingPage } from './features/billing/BillingPage';
 import { InvoicePage, InvoicesPage } from './features/billing/InvoicesPage';
@@ -43,6 +45,12 @@ export function App() {
               <Route path="/locations" element={<LocationsPage />} />
               <Route path="/suppliers" element={<SuppliersPage />} />
               <Route path="/inventory" element={<InventoryPage />} />
+            </Route>
+            <Route element={<RequirePermission permission="sales:read" />}>
+              <Route path="/sales" element={<ExplorerPage />} />
+            </Route>
+            <Route element={<RequirePermission permission="import:sales" />}>
+              <Route path="/import" element={<ImportPage />} />
             </Route>
             <Route element={<RequirePermission permission="team:read" />}>
               <Route path="/team" element={<TeamPage />} />

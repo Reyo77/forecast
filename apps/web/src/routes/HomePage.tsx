@@ -1,6 +1,7 @@
 import { useEffect, useState } from 'react';
 import { Navigate } from 'react-router-dom';
 import { useAuth } from '../features/auth/AuthContext';
+import { DemoDataCard } from '../features/sales/DemoDataCard';
 
 type Status = 'checking' | 'ok' | 'down';
 
@@ -20,6 +21,9 @@ export function HomePage() {
     <section>
       <h1 className="text-3xl font-bold">SupplyCast</h1>
       <p className="mt-2 text-gray-600">Demand forecasting and what-if planning.</p>
+      <div className="mt-6">
+        <DemoDataCard />
+      </div>
       <p className="mt-4 text-sm" data-testid="api-status">
         API: {status}
       </p>

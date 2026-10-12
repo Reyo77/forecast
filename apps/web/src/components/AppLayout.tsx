@@ -11,6 +11,8 @@ export const NAV_ITEMS: { to: string; label: string; permission: Permission }[] 
   { to: '/locations', label: 'Locations', permission: 'masterdata:read' },
   { to: '/suppliers', label: 'Suppliers', permission: 'masterdata:read' },
   { to: '/inventory', label: 'Inventory', permission: 'masterdata:read' },
+  { to: '/sales', label: 'Sales', permission: 'sales:read' },
+  { to: '/import', label: 'Import', permission: 'import:sales' },
   { to: '/team', label: 'Team', permission: 'team:read' },
   { to: '/billing', label: 'Billing', permission: 'billing:read' },
   { to: '/audit-log', label: 'Audit log', permission: 'audit:read' },

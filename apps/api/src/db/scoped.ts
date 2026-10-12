@@ -23,6 +23,8 @@ export const TENANT_SCOPED_MODELS = new Set<string>([
   'BomItem',
   'InventoryLevel',
   'OpenOrder',
+  'SalesImport',
+  'SalesRecord',
 ]);
 
 const WHERE_OPS = new Set([
