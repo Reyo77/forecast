@@ -4,12 +4,15 @@ import { ASSIGNABLE_ROLES, type AssignableRole, type TeamUser } from '@supplycas
 import { CopyLink } from '../../components/CopyLink';
 import { useAuth } from '../auth/AuthContext';
 import { Can } from '../auth/Can';
+import { api } from '../../api/client';
 import { teamApi } from './api';
 
 const errMsg = (e: unknown) => (e instanceof Error ? e.message : 'Something went wrong');
 
 export function TeamPage() {
-  const { user: me } = useAuth();
+  const { user: me, logout } = useAuth();
+  const [deletePw, setDeletePw] = useState('');
+  const [confirmDelete, setConfirmDelete] = useState(false);
   const qc = useQueryClient();
   const users = useQuery({ queryKey: ['team', 'users'], queryFn: teamApi.users });
   const invites = useQuery({ queryKey: ['team', 'invites'], queryFn: teamApi.invites });
@@ -68,6 +71,11 @@ export function TeamPage() {
     onError,
   });
 
+  const delTenant = useMutation({
+    mutationFn: () => api('/tenant', 'DELETE', { password: deletePw }),
+    onSuccess: () => void logout(),
+    onError,
+  });
   const isOwner = me?.role === 'OWNER';
   const canEditRow = (u: TeamUser) => u.role !== 'OWNER' && u.id !== me?.id;
 
@@ -279,6 +287,54 @@ export function TeamPage() {
             </button>
           </div>
         </form>
+      </Can>
+      <Can permission="tenant:delete">
+        <section
+          className="space-y-2 rounded border border-red-300 bg-red-50 p-4"
+          aria-label="Danger zone"
+        >
+          <h2 className="font-semibold text-red-800">Danger zone</h2>
+          {!confirmDelete ? (
+            <button
+              onClick={() => setConfirmDelete(true)}
+              className="rounded border border-red-400 px-3 py-1.5 text-sm text-red-800"
+            >
+              Delete this company…
+            </button>
+          ) : (
+            <form
+              className="flex flex-wrap items-end gap-3 text-sm"
+              onSubmit={(e) => {
+                e.preventDefault();
+                delTenant.mutate();
+              }}
+            >
+              <p className="w-full text-red-800">
+                This signs everyone out and disables the account. Enter your password to confirm.
+              </p>
+              <label>
+                Your password
+                <input
+                  type="password"
+                  required
+                  value={deletePw}
+                  onChange={(e) => setDeletePw(e.target.value)}
+                  className="mt-1 block rounded border px-2 py-1"
+                />
+              </label>
+              <button type="submit" className="rounded bg-red-700 px-4 py-1.5 text-white">
+                Permanently delete company
+              </button>
+              <button
+                type="button"
+                onClick={() => setConfirmDelete(false)}
+                className="rounded border px-3 py-1.5"
+              >
+                Cancel
+              </button>
+            </form>
+          )}
+        </section>
       </Can>
     </section>
   );

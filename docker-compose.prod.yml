@@ -1,0 +1,40 @@
+# Production-like stack on one machine: MySQL + API + web (nginx). Copy .env.example to .env first.
+services:
+  db:
+    image: mysql:8.0
+    environment:
+      MYSQL_ROOT_PASSWORD: ${MYSQL_ROOT_PASSWORD:-root}
+      MYSQL_DATABASE: supplycast
+      MYSQL_USER: supplycast
+      MYSQL_PASSWORD: ${MYSQL_PASSWORD:-supplycast}
+    volumes: [db-data:/var/lib/mysql]
+    healthcheck:
+      test:
+        ['CMD', 'mysqladmin', 'ping', '-h', 'localhost', '-uroot', '-p${MYSQL_ROOT_PASSWORD:-root}']
+      interval: 5s
+      retries: 20
+  api:
+    build: { context: ., dockerfile: Dockerfile.api }
+    depends_on: { db: { condition: service_healthy } }
+    environment:
+      NODE_ENV: production
+      PORT: 4000
+      DATABASE_URL: mysql://supplycast:${MYSQL_PASSWORD:-supplycast}@db:3306/supplycast
+      DATABASE_URL_TEST: mysql://unused:unused@db:3306/unused
+      JWT_ACCESS_SECRET: ${JWT_ACCESS_SECRET:?set JWT_ACCESS_SECRET}
+      JWT_REFRESH_SECRET: ${JWT_REFRESH_SECRET:?set JWT_REFRESH_SECRET}
+      APP_URL: ${APP_URL:-http://localhost:8080}
+      API_URL: ${API_URL:-http://localhost:8080/api}
+      GEMINI_API_KEY: ${GEMINI_API_KEY:-your-key-here}
+      GEMINI_MODEL: ${GEMINI_MODEL:-gemini-2.5-flash}
+      AI_PROVIDER: gemini
+      SIMULATED_PAYMENTS: 'true'
+      SUPER_ADMIN_EMAIL: ${SUPER_ADMIN_EMAIL:?set SUPER_ADMIN_EMAIL}
+      SUPER_ADMIN_PASSWORD: ${SUPER_ADMIN_PASSWORD:?set SUPER_ADMIN_PASSWORD}
+  web:
+    build: { context: ., dockerfile: Dockerfile.web }
+    depends_on: [api]
+    environment: { API_UPSTREAM: http://api:4000 }
+    ports: ['8080:80']
+volumes:
+  db-data:

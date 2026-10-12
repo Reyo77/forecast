@@ -6,6 +6,7 @@ import { useAuth } from '../features/auth/AuthContext';
 import { useCan } from '../features/auth/Can';
 import { useState } from 'react';
 import { AssistantPanel } from '../features/ai/AssistantPanel';
+import { NotificationBell } from '../features/notifications/NotificationBell';
 
 export const NAV_ITEMS: { to: string; label: string; permission: Permission }[] = [
   { to: '/', label: 'Home', permission: 'dashboard:read' },
@@ -101,6 +102,7 @@ export function AppLayout() {
               Ask AI
             </button>
           )}
+          {can('notifications:read') && <NotificationBell />}
           <span className="text-sm text-gray-600" data-testid="whoami">
             {user?.name} ({user?.role})
           </span>
@@ -117,10 +119,10 @@ export function AppLayout() {
       <main className="mx-auto max-w-6xl p-6">
         {suspended ? (
           <section data-testid="suspended" className="rounded border border-red-300 bg-red-50 p-6">
-            <h1 className="text-xl font-bold text-red-800">Account suspended</h1>
+            <h1 className="text-xl font-bold text-red-800">Account unavailable</h1>
             <p className="mt-2 text-red-700">
-              This account has been suspended by the platform operator. Contact support to restore
-              access.
+              This account is suspended or has been deleted. Contact support if you think this is a
+              mistake.
             </p>
           </section>
         ) : (

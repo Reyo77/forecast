@@ -12,14 +12,16 @@
   ],
   "scripts": {
     "dev": "concurrently -n api,web \"npm run dev -w apps/api\" \"npm run dev -w apps/web\"",
-    "build": "npm run build -w packages/shared && npm run build -w apps/api && npm run build -w apps/web",
+    "build": "npm run build -w apps/api && npm run build -w apps/web",
     "lint": "eslint . && prettier --check .",
     "format": "prettier --write .",
     "typecheck": "npm run typecheck --workspaces --if-present",
     "test": "npm run test -w apps/api && npm run test -w apps/web",
     "e2e": "npm run test -w apps/e2e",
     "db:up": "docker compose up -d",
-    "db:migrate": "npm run prisma:migrate -w apps/api"
+    "db:migrate": "npm run prisma:migrate -w apps/api",
+    "db:seed:demo": "npm run seed:demo -w apps/api",
+    "screenshots": "npm run seed:demo -w apps/api && playwright test -c apps/e2e/screenshots.config.ts"
   },
   "devDependencies": {
     "@eslint/js": "^9.13.0",

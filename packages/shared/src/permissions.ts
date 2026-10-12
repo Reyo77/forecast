@@ -12,6 +12,7 @@ export const PERMISSIONS = {
   'team:read': MANAGERS,
   'team:manage': MANAGERS,
   'tenant:transfer-ownership': ['OWNER'],
+  'tenant:delete': ['OWNER'],
   'audit:read': [...MANAGERS, 'SUPER_ADMIN'],
   'billing:read': MANAGERS,
   'billing:manage': ['OWNER'],

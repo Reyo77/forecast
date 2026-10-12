@@ -231,6 +231,6 @@ describe('suspended tenant UI', () => {
         }),
     });
     renderApp('/');
-    expect(await screen.findByTestId('suspended')).toHaveTextContent('Account suspended');
+    expect(await screen.findByTestId('suspended')).toHaveTextContent('Account unavailable');
   });
 });

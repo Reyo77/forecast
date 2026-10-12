@@ -32,6 +32,9 @@ import { auditReq } from '../audit/service';
 import { isUniqueViolation, num } from './common';
 
 type Db = ScopedClient;
+const linkPage = paginationSchema.extend({
+  pageSize: z.coerce.number().int().min(1).max(100).default(100),
+});
 
 const toSupplierDto = (s: Supplier): SupplierDto => ({
   id: s.id,
@@ -147,12 +150,17 @@ export function supplyRouter(guards: Guards): Router {
         req.db!.supplier.findUnique({ where: { id: req.params.id } }),
         'Supplier',
       );
-      const rows = await req.db!.supplierProduct.findMany({
-        where: { supplierId: s.id },
-        include: { product: true, supplier: true },
-        orderBy: { createdAt: 'asc' },
-      });
-      res.json({ items: rows.map(toSpDto) });
+      const p = linkPage.parse(req.query);
+      const [rows, total] = await Promise.all([
+        req.db!.supplierProduct.findMany({
+          where: { supplierId: s.id },
+          include: { product: true, supplier: true },
+          orderBy: { createdAt: 'asc' },
+          ...skipTake(p),
+        }),
+        req.db!.supplierProduct.count({ where: { supplierId: s.id } }),
+      ]);
+      res.json(paged(rows.map(toSpDto), total, p));
     } catch (e) {
       next(e);
     }
@@ -164,12 +172,17 @@ export function supplyRouter(guards: Guards): Router {
         req.db!.product.findUnique({ where: { id: req.params.id } }),
         'Product',
       );
-      const rows = await req.db!.supplierProduct.findMany({
-        where: { productId: p.id },
-        include: { product: true, supplier: true },
-        orderBy: [{ isPrimary: 'desc' }, { createdAt: 'asc' }],
-      });
-      res.json({ items: rows.map(toSpDto) });
+      const pg = linkPage.parse(req.query);
+      const [rows, total] = await Promise.all([
+        req.db!.supplierProduct.findMany({
+          where: { productId: p.id },
+          include: { product: true, supplier: true },
+          orderBy: [{ isPrimary: 'desc' }, { createdAt: 'asc' }],
+          ...skipTake(pg),
+        }),
+        req.db!.supplierProduct.count({ where: { productId: p.id } }),
+      ]);
+      res.json(paged(rows.map(toSpDto), total, pg));
     } catch (e) {
       next(e);
     }

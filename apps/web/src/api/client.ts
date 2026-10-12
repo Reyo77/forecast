@@ -51,7 +51,11 @@ async function parse<T>(res: Response): Promise<T> {
   const data = await res.json().catch(() => null);
   if (!res.ok) {
     const err = (data as ErrorBody | null)?.error;
-    if (res.status === 403 && err?.code === 'TENANT_SUSPENDED') onSuspended?.();
+    if (
+      res.status === 403 &&
+      (err?.code === 'TENANT_SUSPENDED' || err?.code === 'TENANT_UNAVAILABLE')
+    )
+      onSuspended?.();
     throw new ApiError(
       res.status,
       err?.code ?? 'UNKNOWN',

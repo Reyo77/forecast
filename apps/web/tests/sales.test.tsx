@@ -12,6 +12,15 @@ const base = (
   ...loggedInAs(me),
   'GET /billing/subscription': () => json(200, makeSub({ status: 'ACTIVE' })),
   'GET /demo-data/status': () => json(200, { hasSalesData: true, canLoad: false }),
+  'GET /dashboard': () =>
+    json(200, {
+      counts: { products: 0, locations: 0, suppliers: 0, lateOrders: 0 },
+      sales: { records: 0, from: null, to: null },
+      accuracy: null,
+      upcomingStockouts: null,
+      latestRuns: [],
+      usage: [],
+    }),
   'GET /imports/sales': () => page([]),
   ...extra,
 });

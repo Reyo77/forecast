@@ -16,7 +16,7 @@ declare module 'express-serve-static-core' {
  * blocks suspended tenants and exposes a tenant-scoped Prisma client as req.db.
  */
 export function tenantContext(opts: { allowNoTenant?: boolean } = {}): RequestHandler {
-  return async (req, _res, next) => {
+  const handler: RequestHandler = async (req, _res, next) => {
     try {
       if (!req.auth) throw new HttpError(401, 'UNAUTHENTICATED', 'Authentication required');
       const { tenantId } = req.auth;
@@ -38,4 +38,5 @@ export function tenantContext(opts: { allowNoTenant?: boolean } = {}): RequestHa
       next(err);
     }
   };
+  return Object.assign(handler, { guard: 'tenant' as const });
 }

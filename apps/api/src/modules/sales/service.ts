@@ -2,6 +2,7 @@ import type { Prisma } from '@prisma/client';
 import { prisma } from '../../db/client';
 import { addMonths } from '../../lib/time';
 import { getEffectiveLimits } from '../billing/limits';
+import { notifyUser } from '../notifications/service';
 import { MAX_ERRORS_STORED, parseSalesCsv, type ParseResult, type WeeklyRow } from './csv';
 
 export async function buildParseContext(tenantId: string, now = new Date()) {
@@ -108,6 +109,13 @@ export async function processSalesImport(importId: string, now = new Date()): Pr
         rawCsv: null,
       },
     });
+    await notifyUser(
+      imp.tenantId,
+      imp.createdBy,
+      'import.done',
+      'Sales import finished',
+      `${imp.fileName}: ${written} weekly records imported.`,
+    );
   } catch (err) {
     await prisma.salesImport.update({
       where: { id: imp.id },

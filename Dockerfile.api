@@ -1,0 +1,30 @@
+# SupplyCast API — multi-stage production image.
+FROM node:20-slim AS build
+RUN apt-get update -y && apt-get install -y --no-install-recommends openssl ca-certificates && rm -rf /var/lib/apt/lists/*
+WORKDIR /app
+COPY package.json package-lock.json ./
+COPY apps/api/package.json apps/api/
+COPY apps/web/package.json apps/web/
+COPY apps/e2e/package.json apps/e2e/
+COPY packages/shared/package.json packages/shared/
+RUN npm ci
+COPY tsconfig.base.json ./
+COPY packages packages
+COPY apps/api apps/api
+RUN npx prisma generate --schema apps/api/prisma/schema.prisma && npm run build -w apps/api
+
+FROM node:20-slim
+RUN apt-get update -y && apt-get install -y --no-install-recommends openssl ca-certificates && rm -rf /var/lib/apt/lists/*
+ENV NODE_ENV=production
+WORKDIR /app
+# node_modules is kept whole so the Prisma CLI can run migrations at start-up.
+COPY --from=build /app/node_modules node_modules
+COPY --from=build /app/package.json ./
+COPY --from=build /app/apps/api/package.json apps/api/package.json
+COPY --from=build /app/apps/api/dist apps/api/dist
+COPY --from=build /app/apps/api/prisma apps/api/prisma
+COPY deploy/api-entrypoint.sh /usr/local/bin/api-entrypoint.sh
+RUN chmod +x /usr/local/bin/api-entrypoint.sh
+EXPOSE 4000
+USER node
+CMD ["api-entrypoint.sh"]

@@ -20,6 +20,8 @@ import { aiRouter } from './modules/ai/routes';
 import { AiService } from './modules/ai/service';
 import { UnconfiguredAiClient } from './ai/gemini';
 import type { AiClient } from './ai/types';
+import { notificationsRouter } from './modules/notifications/routes';
+import { dashboardRouter } from './modules/dashboard/routes';
 import { auditRouter } from './modules/audit/routes';
 
 export type AppConfig = Pick<Env, 'APP_URL' | 'JWT_ACCESS_SECRET'> & {
@@ -65,6 +67,8 @@ export function createApp(env: AppConfig, options: AppOptions = {}) {
   app.use(salesRouter(guards));
   app.use(forecastRouter(guards));
   app.use(scenarioRouter(guards));
+  app.use(notificationsRouter(guards));
+  app.use(dashboardRouter(guards));
   app.use(
     aiRouter({
       guards,

@@ -18,3 +18,20 @@ export async function notifyAdmins(
     data: admins.map((u) => ({ tenantId, userId: u.id, type, title, body })),
   });
 }
+
+/** In-app notification for one user (e.g. the person who started a long job). */
+export async function notifyUser(
+  tenantId: string,
+  userId: string | null | undefined,
+  type: string,
+  title: string,
+  body: string,
+): Promise<void> {
+  if (!userId) return;
+  const user = await prisma.user.findFirst({
+    where: { id: userId, tenantId, isActive: true },
+    select: { id: true },
+  });
+  if (!user) return;
+  await prisma.notification.create({ data: { tenantId, userId, type, title, body } });
+}

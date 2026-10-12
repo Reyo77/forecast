@@ -6,6 +6,7 @@ import type { SupplierTerms } from '../../engines/planning/plan';
 import type { PlanResult } from '../../engines/planning/plan';
 import { enqueueJob } from '../../jobs/runner';
 import { registerLiveCounter } from '../billing/limits';
+import { notifyUser } from '../notifications/service';
 import {
   computeScenario,
   HISTORY_WEEKS,
@@ -218,6 +219,13 @@ export async function processScenarioRun(runId: string, now = new Date()): Promi
       },
     });
     await prisma.scenario.update({ where: { id: run.scenarioId }, data: { status: 'READY' } });
+    await notifyUser(
+      run.tenantId,
+      run.createdBy,
+      'scenario.done',
+      'Scenario run finished',
+      `"${run.scenario.name}" is ready to review.`,
+    );
   } catch (err) {
     await prisma.scenarioRun.update({
       where: { id: run.id },

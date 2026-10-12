@@ -8,6 +8,7 @@ import { densify, weeksAfter } from '../../engines/forecast/series';
 import { SEASON_LENGTH, type ModelName } from '../../engines/forecast/types';
 import { reserveUsage } from '../billing/limits';
 import { enqueueJob } from '../../jobs/runner';
+import { notifyUser } from '../notifications/service';
 
 export const FORECAST_RUN_JOB = 'forecast.run';
 
@@ -301,6 +302,15 @@ export async function processForecastRun(
           : null,
       },
     });
+    await notifyUser(
+      tenantId,
+      run.createdBy,
+      allFailed ? 'forecast.failed' : 'forecast.done',
+      allFailed ? 'Forecast run failed' : 'Forecast run finished',
+      allFailed
+        ? 'Every series failed. Open the run to see the error.'
+        : `${done} series forecast${failed ? `, ${failed} failed` : ''}. Open Forecasts to review.`,
+    );
   } catch (err) {
     await prisma.forecastRun.update({
       where: { id: run.id },

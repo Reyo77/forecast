@@ -44,6 +44,10 @@ export const toLocationDto = (l: Location): LocationDto => ({
   type: l.type,
 });
 
+const pageDefault100 = paginationSchema.extend({
+  pageSize: z.coerce.number().int().min(1).max(100).default(100),
+});
+
 const productQuery = paginationSchema.extend({
   q: z.string().trim().max(100).optional(),
   categoryId: z.string().max(64).optional(),
@@ -73,17 +77,22 @@ export function catalogRouter(guards: Guards): Router {
 
   router.get('/categories', ...read, async (req, res, next) => {
     try {
-      const rows = await req.db!.category.findMany({
-        orderBy: [{ name: 'asc' }],
-        include: { _count: { select: { products: true } } },
-      });
+      const p = pageDefault100.parse(req.query);
+      const [rows, total] = await Promise.all([
+        req.db!.category.findMany({
+          orderBy: [{ name: 'asc' }],
+          include: { _count: { select: { products: true } } },
+          ...skipTake(p),
+        }),
+        req.db!.category.count(),
+      ]);
       const items: CategoryDto[] = rows.map((c) => ({
         id: c.id,
         name: c.name,
         parentId: c.parentId,
         productCount: c._count.products,
       }));
-      res.json({ items });
+      res.json(paged(items, total, p));
     } catch (e) {
       next(e);
     }

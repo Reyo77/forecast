@@ -1,5 +1,6 @@
 import { Router } from 'express';
 import bcrypt from 'bcryptjs';
+import { z } from 'zod';
 import {
   createInviteSchema,
   transferOwnershipSchema,
@@ -252,6 +253,26 @@ export function usersRouter(opts: { guards: Guards; appUrl: string }): Router {
       }
     },
   );
+
+  router.delete('/tenant', ...guards.tenant('tenant:delete'), async (req, res, next) => {
+    try {
+      const { password } = z.object({ password: z.string().min(1).max(128) }).parse(req.body);
+      const me = await prisma.user.findUniqueOrThrow({ where: { id: req.auth!.userId } });
+      if (!(await bcrypt.compare(password, me.passwordHash)))
+        throw new HttpError(400, 'INVALID_PASSWORD', 'Password is incorrect');
+      await prisma.$transaction([
+        prisma.tenant.update({ where: { id: req.tenantId! }, data: { status: 'DELETED' } }),
+        prisma.refreshToken.updateMany({
+          where: { user: { tenantId: req.tenantId! }, revokedAt: null },
+          data: { revokedAt: new Date() },
+        }),
+      ]);
+      await auditReq(req, 'tenant.deleted', 'Tenant', req.tenantId);
+      res.status(204).end();
+    } catch (err) {
+      next(err);
+    }
+  });
 
   return router;
 }

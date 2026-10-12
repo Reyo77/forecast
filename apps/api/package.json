@@ -4,13 +4,15 @@
   "private": true,
   "scripts": {
     "dev": "tsx watch src/server.ts",
-    "build": "tsc -p tsconfig.build.json",
+    "build": "esbuild src/server.ts src/seed.ts src/seedDemo.ts --bundle --platform=node --target=node20 --outdir=dist --sourcemap --external:@prisma/client --external:pino --external:pino-http --external:.prisma/client",
     "start": "node dist/server.js",
     "typecheck": "tsc --noEmit -p .",
     "test": "jest --runInBand --coverage",
     "prisma:generate": "prisma generate",
     "prisma:migrate": "prisma migrate dev",
-    "db:seed": "prisma db seed"
+    "db:seed": "prisma db seed",
+    "seed:demo": "tsx src/seedDemo.ts",
+    "loadtest": "tsx scripts/loadtest.ts"
   },
   "dependencies": {
     "@google/genai": "^2.28.0",
@@ -37,6 +39,7 @@
     "@types/jsonwebtoken": "^9.0.10",
     "@types/node": "^20.17.0",
     "@types/supertest": "^6.0.2",
+    "esbuild": "^0.28.2",
     "fast-check": "^3.23.2",
     "jest": "^29.7.0",
     "prisma": "^6.0.0",
@@ -45,6 +48,6 @@
     "tsx": "^4.19.2"
   },
   "prisma": {
-    "seed": "tsx prisma/seed.ts"
+    "seed": "tsx src/seed.ts"
   }
 }

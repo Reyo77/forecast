@@ -332,6 +332,7 @@ model Product {
 
   @@unique([tenantId, sku])
   @@index([tenantId, categoryId])
+  @@index([tenantId, isActive])
 }
 
 model Location {
@@ -437,6 +438,7 @@ model OpenOrder {
   updatedAt    DateTime  @updatedAt
 
   @@index([tenantId, expectedDate])
+  @@index([tenantId, productId])
 }
 
 enum ImportStatus {
@@ -489,6 +491,8 @@ model SalesRecord {
 
   @@unique([tenantId, productId, locationId, date])
   @@index([tenantId, date])
+  @@index([tenantId, productId, date])
+  @@index([tenantId, locationId])
 }
 
 enum RunStatus {
@@ -568,6 +572,7 @@ model ForecastAccuracy {
 
   @@unique([runId, productId, locationId])
   @@index([tenantId])
+  @@index([runId, wape])
 }
 
 model ForecastOverride {

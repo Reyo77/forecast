@@ -21,7 +21,7 @@ declare module 'express-serve-static-core' {
 }
 
 export function requireAuth(secret: string): RequestHandler {
-  return async (req, res, next) => {
+  const handler: RequestHandler = async (req, res, next) => {
     try {
       const header = req.headers.authorization;
       if (!header?.startsWith('Bearer ')) {
@@ -70,4 +70,5 @@ export function requireAuth(secret: string): RequestHandler {
       next(err);
     }
   };
+  return Object.assign(handler, { guard: 'auth' as const });
 }
