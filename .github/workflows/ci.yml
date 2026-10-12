@@ -48,5 +48,9 @@ jobs:
       - run: npm run lint
       - run: npm run typecheck
       - run: npm test
+      - run: npm run build
       - run: npx playwright install --with-deps chromium
+      # Integration tests truncate the shared CI database, so re-create the Super Admin the E2E journeys log in as.
+      - run: npx prisma db seed
+        working-directory: apps/api
       - run: npm run e2e
