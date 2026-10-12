@@ -1,6 +1,8 @@
 import { useMemo, useState } from 'react';
 import { useQuery } from '@tanstack/react-query';
 import {
+  Area,
+  AreaChart,
   CartesianGrid,
   Legend,
   Line,
@@ -11,7 +13,17 @@ import {
   YAxis,
 } from 'recharts';
 import { formatMoney } from '../../lib';
-import { inputCls } from '../../components/ui';
+import { EmptyState, PageHeader, Panel, StatTile, inputCls } from '../../components/ui';
+import {
+  ChartCard,
+  ChartTooltip,
+  GradientDef,
+  axisProps,
+  compact,
+  gridProps,
+  linkButton,
+} from '../../components/charts';
+import { Icon } from '../../components/Icon';
 import { mdApi } from '../masterdata/api';
 import { salesApi } from './api';
 
@@ -65,12 +77,18 @@ export function ExplorerPage() {
   // Colour by series identity (alphabetical order of key) so a series keeps its colour when totals shift.
   const colorOf = (key: string) => SLOTS[[...keys].sort().indexOf(key) % SLOTS.length]!;
   const fmt = (v: number) => (metric === 'revenueCents' ? formatMoney(v) : v.toLocaleString());
-  const axis = { fontSize: 12, fill: 'var(--chart-ink-2)' };
+
+  const label = metric === 'quantity' ? 'units' : 'revenue';
+  const single = data && data.series.length === 1;
+  const yFmt = (v: number) => (metric === 'revenueCents' ? `$${compact(v / 100)}` : compact(v));
 
   return (
-    <section className="space-y-4">
-      <h1 className="text-2xl font-bold">Sales explorer</h1>
-      <div className="flex flex-wrap items-end gap-3 text-sm">
+    <section className="space-y-5">
+      <PageHeader
+        title="Sales explorer"
+        subtitle="See how much you sold, week by week. Slice by product, category or location."
+      />
+      <Panel className="flex flex-wrap items-end gap-3 text-sm">
         <label>
           Group by
           <select
@@ -163,50 +181,59 @@ export function ExplorerPage() {
             <option value="revenueCents">Revenue</option>
           </select>
         </label>
-      </div>
+      </Panel>
 
       {error && (
         <p role="alert" className="text-sm text-red-700">
           {(error as Error).message}
         </p>
       )}
-      {isLoading && <p>Loading…</p>}
+      {isLoading && <p className="text-sm text-gray-500">Loading…</p>}
       {data && (
         <>
           <div className="grid gap-4 sm:grid-cols-3">
-            <div className="rounded-lg border p-4" data-testid="total-units">
-              <p className="text-xs uppercase text-gray-500">Units</p>
-              <p className="text-2xl font-bold">{data.totals.quantity.toLocaleString()}</p>
-            </div>
-            <div className="rounded-lg border p-4" data-testid="total-revenue">
-              <p className="text-xs uppercase text-gray-500">Revenue</p>
-              <p className="text-2xl font-bold">{formatMoney(data.totals.revenueCents)}</p>
-            </div>
-            <div className="rounded-lg border p-4" data-testid="total-weeks">
-              <p className="text-xs uppercase text-gray-500">Weeks with sales</p>
-              <p className="text-2xl font-bold">{data.totals.weeks}</p>
-            </div>
+            <StatTile
+              testId="total-units"
+              label="Units"
+              value={data.totals.quantity.toLocaleString()}
+              icon={<Icon name="box" />}
+              tone="indigo"
+            />
+            <StatTile
+              testId="total-revenue"
+              label="Revenue"
+              value={formatMoney(data.totals.revenueCents)}
+              icon={<Icon name="card" />}
+              tone="green"
+            />
+            <StatTile
+              testId="total-weeks"
+              label="Weeks with sales"
+              value={data.totals.weeks}
+              icon={<Icon name="chart" />}
+              tone="sky"
+            />
           </div>
           {data.series.length === 0 ? (
-            <p className="text-sm text-gray-500" data-testid="explorer-empty">
-              No sales for this selection. Import a CSV or load demo data.
-            </p>
+            <EmptyState title="No sales for this selection" testId="explorer-empty">
+              Import a CSV or load demo data.
+            </EmptyState>
           ) : (
-            <figure className="rounded-lg border border-gray-200 p-4">
-              <figcaption className="mb-2 flex items-center justify-between text-sm">
-                <span className="font-semibold">
-                  Weekly {metric === 'quantity' ? 'units' : 'revenue'}
-                  {data.omittedSeries > 0
-                    ? ` (top 10 of ${data.series.length + data.omittedSeries} groups)`
-                    : ''}
-                </span>
-                <button
-                  onClick={() => setAsTable((v) => !v)}
-                  className="text-xs text-blue-600 underline"
-                >
+            <ChartCard
+              title={`Weekly ${label}`}
+              subtitle={
+                data.omittedSeries > 0
+                  ? `top 10 of ${data.series.length + data.omittedSeries} groups`
+                  : data.series.length > 1
+                    ? 'one line per group'
+                    : 'all selected sales'
+              }
+              action={
+                <button onClick={() => setAsTable((v) => !v)} className={linkButton}>
                   {asTable ? 'Show chart' : 'View as table'}
                 </button>
-              </figcaption>
+              }
+            >
               {asTable ? (
                 <div className="max-h-96 overflow-auto">
                   <table className="w-full text-left text-sm" data-testid="explorer-table">
@@ -231,54 +258,69 @@ export function ExplorerPage() {
                   </table>
                 </div>
               ) : (
-                <div style={{ height: 320 }} role="img" aria-label="Line chart of weekly sales">
+                <div style={{ height: 340 }} role="img" aria-label="Line chart of weekly sales">
                   <ResponsiveContainer>
-                    <LineChart data={rows}>
-                      <CartesianGrid vertical={false} stroke="var(--chart-grid)" />
-                      <XAxis
-                        dataKey="weekStart"
-                        tick={axis}
-                        tickFormatter={(d: string) => d.slice(2, 7)}
-                        minTickGap={40}
-                        stroke="var(--chart-grid)"
-                      />
-                      <YAxis
-                        tick={axis}
-                        tickFormatter={(v: number) =>
-                          metric === 'revenueCents'
-                            ? `$${Math.round(v / 100).toLocaleString()}`
-                            : v.toLocaleString()
-                        }
-                        width={64}
-                        stroke="var(--chart-grid)"
-                      />
-                      <Tooltip
-                        formatter={(v) => fmt(Number(v))}
-                        labelFormatter={(l) => `Week of ${l}`}
-                      />
-                      {data.series.length > 1 && (
+                    {single ? (
+                      <AreaChart data={rows} margin={{ left: 4, right: 8, top: 4 }}>
+                        <GradientDef id="sales-fill" color="var(--series-1)" />
+                        <CartesianGrid {...gridProps} />
+                        <XAxis
+                          dataKey="weekStart"
+                          {...axisProps}
+                          tickFormatter={(d: string) => d.slice(2, 7)}
+                          minTickGap={48}
+                        />
+                        <YAxis {...axisProps} tickFormatter={yFmt} width={52} />
+                        <Tooltip
+                          content={<ChartTooltip format={fmt} title={(l) => `Week of ${l}`} />}
+                        />
+                        <Area
+                          type="monotone"
+                          dataKey={keys[0]!}
+                          name={data.series[0]!.label}
+                          stroke="var(--series-1)"
+                          strokeWidth={2.5}
+                          fill="url(#sales-fill)"
+                          activeDot={{ r: 5, strokeWidth: 2, stroke: '#fff' }}
+                        />
+                      </AreaChart>
+                    ) : (
+                      <LineChart data={rows} margin={{ left: 4, right: 8, top: 4 }}>
+                        <CartesianGrid {...gridProps} />
+                        <XAxis
+                          dataKey="weekStart"
+                          {...axisProps}
+                          tickFormatter={(d: string) => d.slice(2, 7)}
+                          minTickGap={48}
+                        />
+                        <YAxis {...axisProps} tickFormatter={yFmt} width={52} />
+                        <Tooltip
+                          content={<ChartTooltip format={fmt} title={(l) => `Week of ${l}`} />}
+                        />
                         <Legend
+                          iconType="circle"
+                          iconSize={8}
                           formatter={(key) => data.series.find((s) => s.key === key)?.label ?? key}
                         />
-                      )}
-                      {data.series.map((s) => (
-                        <Line
-                          key={s.key}
-                          type="monotone"
-                          dataKey={s.key}
-                          name={s.key}
-                          stroke={colorOf(s.key)}
-                          strokeWidth={2}
-                          dot={false}
-                          activeDot={{ r: 4 }}
-                          connectNulls
-                        />
-                      ))}
-                    </LineChart>
+                        {data.series.map((s) => (
+                          <Line
+                            key={s.key}
+                            type="monotone"
+                            dataKey={s.key}
+                            name={s.label}
+                            stroke={colorOf(s.key)}
+                            strokeWidth={2}
+                            dot={false}
+                            activeDot={{ r: 4, strokeWidth: 2, stroke: '#fff' }}
+                            connectNulls
+                          />
+                        ))}
+                      </LineChart>
+                    )}
                   </ResponsiveContainer>
                 </div>
               )}
-            </figure>
+            </ChartCard>
           )}
         </>
       )}

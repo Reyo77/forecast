@@ -2,6 +2,7 @@ import { useState } from 'react';
 import { useQuery } from '@tanstack/react-query';
 import { Bar, BarChart, CartesianGrid, ResponsiveContainer, Tooltip, XAxis, YAxis } from 'recharts';
 import { formatMoney } from '../../lib';
+import { ChartTooltip } from '../../components/charts';
 import { adminApi } from './api';
 
 function Tile({ label, value, id }: { label: string; value: string; id: string }) {
@@ -44,7 +45,7 @@ export function MetricsPage() {
   if (isLoading) return <p>Loading…</p>;
   if (error || !data) return <p role="alert">{(error as Error)?.message}</p>;
   const m = data;
-  const axis = { fontSize: 12, fill: 'var(--chart-ink-2)' };
+  const axis = { fontSize: 11, fill: '#64748b' };
   return (
     <section className="space-y-6">
       <h1 className="text-2xl font-bold">Platform overview</h1>
@@ -81,21 +82,19 @@ export function MetricsPage() {
             <div style={{ height: 220 }} role="img" aria-label="Bar chart of tenants by plan">
               <ResponsiveContainer>
                 <BarChart data={m.tenantsByPlan} layout="vertical" margin={{ left: 16 }}>
-                  <CartesianGrid horizontal={false} stroke="var(--chart-grid)" />
-                  <XAxis
-                    type="number"
-                    allowDecimals={false}
-                    tick={axis}
-                    stroke="var(--chart-grid)"
-                  />
+                  <CartesianGrid horizontal={false} stroke="transparent" strokeDasharray="3 4" />
+                  <XAxis type="number" allowDecimals={false} tick={axis} stroke="transparent" />
                   <YAxis
                     type="category"
                     dataKey="plan"
                     tick={axis}
-                    stroke="var(--chart-grid)"
+                    stroke="transparent"
                     width={90}
                   />
-                  <Tooltip cursor={{ fill: 'var(--chart-grid)', opacity: 0.4 }} />
+                  <Tooltip
+                    content={<ChartTooltip />}
+                    cursor={{ fill: 'var(--chart-grid)', opacity: 0.4 }}
+                  />
                   <Bar
                     dataKey="count"
                     name="Tenants"
@@ -126,16 +125,19 @@ export function MetricsPage() {
           <div style={{ height: 220 }} role="img" aria-label="Bar chart of AI requests per day">
             <ResponsiveContainer>
               <BarChart data={m.aiRequestsPerDay}>
-                <CartesianGrid vertical={false} stroke="var(--chart-grid)" />
+                <CartesianGrid vertical={false} stroke="transparent" strokeDasharray="3 4" />
                 <XAxis
                   dataKey="date"
                   tick={axis}
                   tickFormatter={(d: string) => d.slice(5)}
                   interval={6}
-                  stroke="var(--chart-grid)"
+                  stroke="transparent"
                 />
-                <YAxis allowDecimals={false} tick={axis} stroke="var(--chart-grid)" width={32} />
-                <Tooltip cursor={{ fill: 'var(--chart-grid)', opacity: 0.4 }} />
+                <YAxis allowDecimals={false} tick={axis} stroke="transparent" width={32} />
+                <Tooltip
+                  content={<ChartTooltip />}
+                  cursor={{ fill: 'var(--chart-grid)', opacity: 0.4 }}
+                />
                 <Bar
                   dataKey="count"
                   name="Requests"

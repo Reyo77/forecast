@@ -7,6 +7,7 @@ import {
   ComposedChart,
   Legend,
   Line,
+  ReferenceLine,
   ResponsiveContainer,
   Tooltip,
   XAxis,
@@ -15,6 +16,7 @@ import {
 import { MODEL_LABELS } from '@supplycast/shared';
 import { downloadFile } from '../../api/client';
 import { Notice, errText, inputCls } from '../../components/ui';
+import { ChartTooltip, GradientDef, axisProps, compact, gridProps } from '../../components/charts';
 import { formatDate } from '../../lib';
 import { Can } from '../auth/Can';
 import { mdApi } from '../masterdata/api';
@@ -118,13 +120,24 @@ export function ForecastRunPage() {
       band: [p.lower, p.upper] as [number, number],
       override: p.override,
     }));
-    return [...hist, ...fc];
+    // Bridge the two lines so the forecast visibly continues from the last actual week.
+    const last = hist[hist.length - 1];
+    const bridged = last
+      ? [
+          {
+            ...last,
+            forecast: last.history,
+            band: [last.history, last.history] as [number, number],
+          },
+        ]
+      : [];
+    return [...hist.slice(0, -1), ...bridged, ...fc];
   }, [series.data]);
+  const firstForecast = series.data?.forecast[0]?.weekStart;
 
   if (run.isLoading) return <p>Loading…</p>;
   if (run.error || !run.data) return <p role="alert">{errText(run.error)}</p>;
   const r = run.data.run;
-  const axis = { fontSize: 12, fill: 'var(--chart-ink-2)' };
   const sortBtn = (key: string, label: string) => (
     <button
       onClick={() => {
@@ -194,7 +207,7 @@ export function ForecastRunPage() {
 
       {r.status === 'DONE' && (
         <>
-          <div className="space-y-3 rounded-lg border border-gray-200 p-4">
+          <div className="space-y-4 rounded-xl border border-gray-200 bg-white p-5 shadow-card">
             <div className="flex flex-wrap items-end gap-3 text-sm">
               <label>
                 Product
@@ -293,40 +306,66 @@ export function ForecastRunPage() {
                       aria-label="History, forecast and prediction interval chart"
                     >
                       <ResponsiveContainer>
-                        <ComposedChart data={chartData}>
-                          <CartesianGrid vertical={false} stroke="var(--chart-grid)" />
+                        <ComposedChart data={chartData} margin={{ left: 4, right: 8, top: 8 }}>
+                          <GradientDef id="hist-fill" color="var(--series-1)" from={0.22} />
+                          <CartesianGrid {...gridProps} />
                           <XAxis
                             dataKey="weekStart"
-                            tick={axis}
+                            {...axisProps}
                             tickFormatter={(d: string) => d.slice(2, 7)}
-                            minTickGap={40}
-                            stroke="var(--chart-grid)"
+                            minTickGap={48}
                           />
-                          <YAxis tick={axis} width={56} stroke="var(--chart-grid)" />
-                          <Tooltip />
-                          <Legend />
+                          <YAxis {...axisProps} tickFormatter={compact} width={48} />
+                          <Tooltip
+                            content={
+                              <ChartTooltip
+                                title={(l) => `Week of ${l}`}
+                                format={(v) => (Math.round(v * 10) / 10).toLocaleString()}
+                              />
+                            }
+                          />
+                          <Legend iconType="circle" iconSize={8} />
+                          {firstForecast && (
+                            <ReferenceLine
+                              x={firstForecast}
+                              stroke="#94a3b8"
+                              strokeDasharray="4 4"
+                              label={{
+                                value: 'Forecast →',
+                                position: 'insideTopRight',
+                                fontSize: 11,
+                                fill: '#64748b',
+                              }}
+                            />
+                          )}
                           <Area
                             dataKey="band"
                             name="80% interval"
                             stroke="none"
                             fill="var(--series-2)"
-                            fillOpacity={0.18}
+                            fillOpacity={0.16}
+                            animationDuration={500}
                           />
-                          <Line
+                          <Area
                             dataKey="history"
                             name="History"
+                            type="monotone"
                             stroke="var(--series-1)"
-                            strokeWidth={2}
+                            strokeWidth={2.5}
+                            fill="url(#hist-fill)"
                             dot={false}
                             connectNulls={false}
+                            animationDuration={500}
                           />
                           <Line
                             dataKey="forecast"
                             name="Forecast"
+                            type="monotone"
                             stroke="var(--series-2)"
-                            strokeWidth={2}
+                            strokeWidth={2.5}
                             strokeDasharray="6 4"
                             dot={false}
+                            animationDuration={500}
                           />
                           <Line
                             dataKey="override"
@@ -334,12 +373,12 @@ export function ForecastRunPage() {
                             stroke="var(--series-3)"
                             strokeWidth={0}
                             dot={{
-                              r: 5,
+                              r: 5.5,
                               fill: 'var(--series-3)',
-                              stroke: 'var(--chart-surface)',
+                              stroke: '#fff',
                               strokeWidth: 2,
                             }}
-                            activeDot={{ r: 6 }}
+                            activeDot={{ r: 7 }}
                           />
                         </ComposedChart>
                       </ResponsiveContainer>

@@ -13,7 +13,7 @@ test('Phase 8: dashboard, notifications, security basics and deleting a company'
   await page.getByRole('button', { name: 'Sign up' }).click();
 
   // New accounts get a getting-started guide.
-  await expect(page.getByRole('heading', { name: 'Dashboard' })).toBeVisible();
+  await expect(page.getByRole('heading', { name: /Welcome back/ })).toBeVisible();
   await expect(page.getByTestId('getting-started')).toBeVisible();
   await page.getByRole('button', { name: 'Load demo data' }).click();
   await expect(page.getByText(/Demo data loaded/)).toBeVisible();

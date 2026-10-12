@@ -2,10 +2,12 @@ import { useMemo, useState } from 'react';
 import { useMutation, useQuery, useQueryClient } from '@tanstack/react-query';
 import { Link, useNavigate, useParams } from 'react-router-dom';
 import {
+  Area,
   CartesianGrid,
   ComposedChart,
   Legend,
   Line,
+  ReferenceLine,
   ResponsiveContainer,
   Tooltip,
   XAxis,
@@ -14,6 +16,7 @@ import {
 import type { AtRiskDto } from '@supplycast/shared';
 import { Notice, errText, inputCls } from '../../components/ui';
 import { formatMoney } from '../../lib';
+import { ChartTooltip, GradientDef, axisProps, compact, gridProps } from '../../components/charts';
 import { Can } from '../auth/Can';
 import { scenarioApi } from './api';
 import { RiskCard } from '../ai/RiskCard';
@@ -144,7 +147,6 @@ export function ScenarioPage() {
   if (q.isLoading) return <p>Loading…</p>;
   if (q.error || !q.data) return <p role="alert">{errText(q.error)}</p>;
   const { scenario, levers } = q.data;
-  const axis = { fontSize: 12, fill: 'var(--chart-ink-2)' };
   const running =
     scenario.status === 'RUNNING' || latest?.status === 'RUNNING' || latest?.status === 'PENDING';
 
@@ -279,31 +281,38 @@ export function ScenarioPage() {
                       baseline: w.baseline.onHand,
                       scenario: w.scenario.onHand,
                     }))}
+                    margin={{ left: 4, right: 8, top: 8 }}
                   >
-                    <CartesianGrid vertical={false} stroke="var(--chart-grid)" />
+                    <GradientDef id="scn-base" color="var(--series-1)" from={0.2} />
+                    <CartesianGrid {...gridProps} />
                     <XAxis
                       dataKey="weekStart"
-                      tick={axis}
+                      {...axisProps}
                       tickFormatter={(d: string) => d.slice(5)}
-                      stroke="var(--chart-grid)"
+                      minTickGap={32}
                     />
-                    <YAxis tick={axis} width={56} stroke="var(--chart-grid)" />
-                    <Tooltip />
-                    <Legend />
-                    <Line
+                    <YAxis {...axisProps} tickFormatter={compact} width={48} />
+                    <Tooltip content={<ChartTooltip title={(l) => `Week of ${l}`} />} />
+                    <Legend iconType="circle" iconSize={8} />
+                    <ReferenceLine y={0} stroke="#ef4444" strokeDasharray="4 4" />
+                    <Area
+                      type="monotone"
                       dataKey="baseline"
                       name="Baseline"
                       stroke="var(--series-1)"
-                      strokeWidth={2}
-                      dot={false}
+                      strokeWidth={2.5}
+                      fill="url(#scn-base)"
+                      animationDuration={500}
                     />
                     <Line
+                      type="monotone"
                       dataKey="scenario"
                       name="Scenario"
                       stroke="var(--series-2)"
-                      strokeWidth={2}
+                      strokeWidth={2.5}
                       strokeDasharray="6 4"
                       dot={false}
+                      animationDuration={500}
                     />
                   </ComposedChart>
                 </ResponsiveContainer>

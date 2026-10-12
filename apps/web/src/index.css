@@ -2,34 +2,169 @@
 @tailwind components;
 @tailwind utilities;
 
-/* Chart tokens (categorical slot 1/2, surface, ink). Dark values are stepped for the dark surface. */
+/* ---- Chart tokens: one validated categorical palette, brand-first ordering ---- */
 :root {
-  --chart-surface: #fcfcfb;
-  --chart-ink: #0b0b0b;
-  --chart-ink-2: #52514e;
-  --chart-grid: #e4e3df;
-  --series-1: #2a78d6;
-  --series-2: #eb6834;
-  --series-3: #1baf7a;
+  --chart-surface: #ffffff;
+  --chart-ink: #0f172a;
+  --chart-ink-2: #64748b;
+  --chart-grid: #e8ecf3;
+  --series-1: #4f46e5; /* brand indigo */
+  --series-2: #f97316; /* orange */
+  --series-3: #10b981; /* green */
   --series-4: #eda100;
   --series-5: #e87ba4;
-  --series-6: #008300;
+  --series-6: #0891b2;
   --series-7: #6250d6;
   --series-8: #e34948;
 }
-@media (prefers-color-scheme: dark) {
-  :root:where(:not([data-theme='light'])) {
-    --chart-surface: #1a1a19;
-    --chart-ink: #f0efec;
-    --chart-ink-2: #c3c2b7;
-    --chart-grid: #3a3a37;
-    --series-1: #3987e5;
-    --series-2: #d95926;
-    --series-3: #199e70;
-    --series-4: #c98500;
-    --series-5: #d55181;
-    --series-6: #008300;
-    --series-7: #9085e9;
-    --series-8: #e66767;
+
+@layer base {
+  html {
+    -webkit-font-smoothing: antialiased;
+    scroll-behavior: smooth;
+  }
+  body {
+    @apply bg-gray-50 font-sans text-gray-800;
+  }
+  h1 {
+    @apply text-2xl font-semibold tracking-tight text-gray-900;
+  }
+  h2 {
+    @apply font-semibold text-gray-900;
+  }
+  a {
+    @apply transition-colors;
+  }
+  :focus-visible {
+    @apply outline-none ring-2 ring-blue-500 ring-offset-1;
+  }
+
+  /* Form controls */
+  input:not([type='checkbox']):not([type='radio']):not([type='range']),
+  select,
+  textarea {
+    @apply rounded-lg border border-gray-300 bg-white px-3 py-1.5 text-sm text-gray-900 shadow-sm transition;
+  }
+  input:not([type='checkbox']):not([type='radio']):hover,
+  select:hover {
+    @apply border-gray-400;
+  }
+  input:not([type='checkbox']):not([type='radio']):focus,
+  select:focus,
+  textarea:focus {
+    @apply border-blue-500 outline-none ring-2 ring-blue-200;
+  }
+  input::placeholder {
+    @apply text-gray-400;
+  }
+  input[type='checkbox'],
+  input[type='radio'] {
+    @apply h-4 w-4 rounded border-gray-300 text-blue-600;
+  }
+  label {
+    @apply text-sm font-medium text-gray-600;
+  }
+  label input:not([type='checkbox']):not([type='radio']),
+  label select {
+    @apply mt-1 font-normal;
+  }
+
+  /* Buttons: utility classes (bg-*, text-*) still win over these defaults */
+  button {
+    @apply rounded-lg text-sm font-medium transition active:scale-[0.98] disabled:cursor-not-allowed;
+  }
+  button[class*='border'] {
+    @apply bg-white shadow-sm hover:bg-gray-50;
+  }
+  button[class*='bg-blue-600'],
+  button[class*='bg-purple-700'],
+  button[class*='bg-green-700'],
+  button[class*='bg-amber-600'],
+  button[class*='bg-red-700'] {
+    @apply shadow-sm hover:brightness-110;
+  }
+  button[class*='bg-blue-600'] {
+    @apply bg-gradient-to-b from-blue-500 to-blue-600;
+  }
+
+  /* Tables */
+  table {
+    @apply border-collapse;
+  }
+  thead {
+    @apply text-xs uppercase tracking-wide text-gray-500;
+  }
+  thead th {
+    @apply pb-2 pt-1 font-semibold;
+  }
+  tbody tr {
+    @apply transition-colors;
+  }
+  tbody tr:hover {
+    @apply bg-gray-50;
+  }
+  tbody td {
+    @apply py-2;
+  }
+  tr.border-b,
+  tbody tr {
+    @apply border-gray-100;
+  }
+  code {
+    @apply rounded bg-gray-100 px-1 py-0.5 text-xs text-gray-700;
+  }
+}
+
+@layer components {
+  /* Cards: every bordered, rounded panel gets a white surface and soft shadow */
+  [class~='rounded-lg'][class~='border-gray-200'],
+  [class~='rounded'][class~='border-gray-200'] {
+    @apply bg-white shadow-card;
+  }
+  figure.rounded-lg {
+    @apply bg-white shadow-card;
+  }
+  details > summary {
+    @apply list-none;
+  }
+  details > summary::-webkit-details-marker {
+    display: none;
+  }
+
+  .page {
+    @apply mx-auto w-full max-w-6xl space-y-6 px-4 py-6 sm:px-6 lg:px-8;
+  }
+  .card {
+    @apply rounded-xl border border-gray-200 bg-white shadow-card;
+  }
+  .badge {
+    @apply inline-flex items-center gap-1 rounded-full px-2.5 py-0.5 text-xs font-medium;
+  }
+  .nav-link {
+    @apply flex items-center gap-3 rounded-lg px-3 py-2 text-sm font-medium text-gray-600 transition hover:bg-gray-100 hover:text-gray-900;
+  }
+  .nav-link.active {
+    @apply bg-blue-50 text-blue-700;
+  }
+}
+
+/* Recharts polish */
+.recharts-default-tooltip {
+  border: 0 !important;
+  border-radius: 12px !important;
+  box-shadow: 0 10px 30px -8px rgba(15, 23, 42, 0.25) !important;
+  padding: 10px 12px !important;
+}
+.recharts-legend-item-text {
+  color: #475569 !important;
+  font-size: 12px;
+}
+.recharts-cartesian-axis-tick-value {
+  font-size: 11px;
+}
+
+@media print {
+  body {
+    @apply bg-white;
   }
 }

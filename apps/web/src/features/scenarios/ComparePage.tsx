@@ -12,6 +12,7 @@ import {
   YAxis,
 } from 'recharts';
 import { errText } from '../../components/ui';
+import { ChartTooltip, axisProps, compact, gridProps } from '../../components/charts';
 import { scenarioApi } from './api';
 import { DeltaBadge, KPI_LABELS, formatKpi } from './Kpis';
 import { AtRiskTable } from './ScenarioPage';
@@ -29,7 +30,6 @@ export function ComparePage() {
   if (isLoading) return <p>Loading…</p>;
   if (error || !data) return <p role="alert">{errText(error)}</p>;
   const colors = ['var(--series-2)', 'var(--series-3)', 'var(--series-4)'];
-  const axis = { fontSize: 12, fill: 'var(--chart-ink-2)' };
   const chart = data.baseline.totals.map((w, i) => ({
     weekStart: w.weekStart,
     baseline: w.onHand,
@@ -84,33 +84,37 @@ export function ComparePage() {
           aria-label="Projected inventory per week: baseline and scenarios"
         >
           <ResponsiveContainer>
-            <LineChart data={chart}>
-              <CartesianGrid vertical={false} stroke="var(--chart-grid)" />
+            <LineChart data={chart} margin={{ left: 4, right: 8, top: 8 }}>
+              <CartesianGrid {...gridProps} />
               <XAxis
                 dataKey="weekStart"
-                tick={axis}
+                {...axisProps}
                 tickFormatter={(d: string) => d.slice(5)}
-                stroke="var(--chart-grid)"
+                minTickGap={32}
               />
-              <YAxis tick={axis} width={64} stroke="var(--chart-grid)" />
-              <Tooltip />
-              <Legend />
+              <YAxis {...axisProps} tickFormatter={compact} width={52} />
+              <Tooltip content={<ChartTooltip title={(l) => `Week of ${l}`} />} />
+              <Legend iconType="circle" iconSize={8} />
               <Line
                 dataKey="baseline"
                 name="Baseline"
+                type="monotone"
                 stroke="var(--series-1)"
-                strokeWidth={2}
+                strokeWidth={3}
                 dot={false}
+                animationDuration={500}
               />
               {data.scenarios.map((s, j) => (
                 <Line
                   key={s.id}
                   dataKey={`s${j}`}
                   name={s.name}
+                  type="monotone"
                   stroke={colors[j]}
-                  strokeWidth={2}
+                  strokeWidth={2.5}
                   strokeDasharray={j ? '6 4' : undefined}
                   dot={false}
+                  animationDuration={500}
                 />
               ))}
             </LineChart>
