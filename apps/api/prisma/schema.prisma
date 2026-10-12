@@ -22,31 +22,35 @@ enum Role {
 }
 
 model Tenant {
-  id               String            @id @default(cuid())
-  name             String
-  slug             String            @unique
-  status           TenantStatus      @default(ACTIVE)
-  createdAt        DateTime          @default(now())
-  updatedAt        DateTime          @updatedAt
-  users            User[]
-  invites          Invite[]
-  auditLogs        AuditLog[]
-  subscription     Subscription?
-  invoices         Invoice[]
-  usageCounters    UsageCounter[]
-  notifications    Notification[]
-  aiRequests       AiRequest[]
-  jobs             Job[]
-  categories       Category[]
-  products         Product[]
-  locations        Location[]
-  suppliers        Supplier[]
-  supplierProducts SupplierProduct[]
-  bomItems         BomItem[]
-  inventoryLevels  InventoryLevel[]
-  openOrders       OpenOrder[]
-  salesImports     SalesImport[]
-  salesRecords     SalesRecord[]
+  id                 String             @id @default(cuid())
+  name               String
+  slug               String             @unique
+  status             TenantStatus       @default(ACTIVE)
+  createdAt          DateTime           @default(now())
+  updatedAt          DateTime           @updatedAt
+  users              User[]
+  invites            Invite[]
+  auditLogs          AuditLog[]
+  subscription       Subscription?
+  invoices           Invoice[]
+  usageCounters      UsageCounter[]
+  notifications      Notification[]
+  aiRequests         AiRequest[]
+  jobs               Job[]
+  categories         Category[]
+  products           Product[]
+  locations          Location[]
+  suppliers          Supplier[]
+  supplierProducts   SupplierProduct[]
+  bomItems           BomItem[]
+  inventoryLevels    InventoryLevel[]
+  openOrders         OpenOrder[]
+  salesImports       SalesImport[]
+  salesRecords       SalesRecord[]
+  forecastRuns       ForecastRun[]
+  forecastResults    ForecastResult[]
+  forecastAccuracies ForecastAccuracy[]
+  forecastOverrides  ForecastOverride[]
 }
 
 model User {
@@ -298,42 +302,48 @@ model Category {
 }
 
 model Product {
-  id               String            @id @default(cuid())
-  tenantId         String
-  tenant           Tenant            @relation(fields: [tenantId], references: [id], onDelete: Cascade)
-  sku              String
-  name             String
-  categoryId       String?
-  category         Category?         @relation(fields: [categoryId], references: [id], onDelete: SetNull)
-  unitCostCents    Int               @default(0)
-  unitPriceCents   Int               @default(0)
-  isComponent      Boolean           @default(false)
-  isActive         Boolean           @default(true)
-  createdAt        DateTime          @default(now())
-  updatedAt        DateTime          @updatedAt
-  supplierProducts SupplierProduct[]
-  bomAsParent      BomItem[]         @relation("BomParent")
-  bomAsComponent   BomItem[]         @relation("BomComponent")
-  inventoryLevels  InventoryLevel[]
-  openOrders       OpenOrder[]
-  salesRecords     SalesRecord[]
+  id                 String             @id @default(cuid())
+  tenantId           String
+  tenant             Tenant             @relation(fields: [tenantId], references: [id], onDelete: Cascade)
+  sku                String
+  name               String
+  categoryId         String?
+  category           Category?          @relation(fields: [categoryId], references: [id], onDelete: SetNull)
+  unitCostCents      Int                @default(0)
+  unitPriceCents     Int                @default(0)
+  isComponent        Boolean            @default(false)
+  isActive           Boolean            @default(true)
+  createdAt          DateTime           @default(now())
+  updatedAt          DateTime           @updatedAt
+  supplierProducts   SupplierProduct[]
+  bomAsParent        BomItem[]          @relation("BomParent")
+  bomAsComponent     BomItem[]          @relation("BomComponent")
+  inventoryLevels    InventoryLevel[]
+  openOrders         OpenOrder[]
+  salesRecords       SalesRecord[]
+  forecastResults    ForecastResult[]
+  forecastAccuracies ForecastAccuracy[]
+  forecastOverrides  ForecastOverride[]
 
   @@unique([tenantId, sku])
   @@index([tenantId, categoryId])
 }
 
 model Location {
-  id              String           @id @default(cuid())
-  tenantId        String
-  tenant          Tenant           @relation(fields: [tenantId], references: [id], onDelete: Cascade)
-  code            String
-  name            String
-  type            LocationType     @default(WAREHOUSE)
-  createdAt       DateTime         @default(now())
-  updatedAt       DateTime         @updatedAt
-  inventoryLevels InventoryLevel[]
-  openOrders      OpenOrder[]
-  salesRecords    SalesRecord[]
+  id                 String             @id @default(cuid())
+  tenantId           String
+  tenant             Tenant             @relation(fields: [tenantId], references: [id], onDelete: Cascade)
+  code               String
+  name               String
+  type               LocationType       @default(WAREHOUSE)
+  createdAt          DateTime           @default(now())
+  updatedAt          DateTime           @updatedAt
+  inventoryLevels    InventoryLevel[]
+  openOrders         OpenOrder[]
+  salesRecords       SalesRecord[]
+  forecastResults    ForecastResult[]
+  forecastAccuracies ForecastAccuracy[]
+  forecastOverrides  ForecastOverride[]
 
   @@unique([tenantId, code])
 }
@@ -474,4 +484,101 @@ model SalesRecord {
 
   @@unique([tenantId, productId, locationId, date])
   @@index([tenantId, date])
+}
+
+enum RunStatus {
+  PENDING
+  RUNNING
+  DONE
+  FAILED
+}
+
+model ForecastRun {
+  id           String             @id @default(cuid())
+  tenantId     String
+  tenant       Tenant             @relation(fields: [tenantId], references: [id], onDelete: Cascade)
+  status       RunStatus          @default(PENDING)
+  horizonWeeks Int
+  method       String
+  filters      Json
+  progress     Int                @default(0)
+  seriesTotal  Int                @default(0)
+  seriesDone   Int                @default(0)
+  seriesFailed Int                @default(0)
+  failures     Json?
+  asOfWeek     DateTime?          @db.Date
+  startedAt    DateTime?
+  finishedAt   DateTime?
+  error        String?            @db.Text
+  createdBy    String?
+  createdAt    DateTime           @default(now())
+  updatedAt    DateTime           @updatedAt
+  results      ForecastResult[]
+  accuracies   ForecastAccuracy[]
+
+  @@index([tenantId, createdAt])
+}
+
+model ForecastResult {
+  id         String      @id @default(cuid())
+  tenantId   String
+  tenant     Tenant      @relation(fields: [tenantId], references: [id], onDelete: Cascade)
+  runId      String
+  run        ForecastRun @relation(fields: [runId], references: [id], onDelete: Cascade)
+  productId  String
+  product    Product     @relation(fields: [productId], references: [id], onDelete: Cascade)
+  locationId String
+  location   Location    @relation(fields: [locationId], references: [id], onDelete: Cascade)
+  weekStart  DateTime    @db.Date
+  quantity   Decimal     @db.Decimal(14, 3)
+  lower      Decimal     @db.Decimal(14, 3)
+  upper      Decimal     @db.Decimal(14, 3)
+  modelUsed  String
+  createdAt  DateTime    @default(now())
+  updatedAt  DateTime    @updatedAt
+
+  @@index([runId, productId, locationId])
+  @@index([tenantId])
+}
+
+model ForecastAccuracy {
+  id         String      @id @default(cuid())
+  tenantId   String
+  tenant     Tenant      @relation(fields: [tenantId], references: [id], onDelete: Cascade)
+  runId      String
+  run        ForecastRun @relation(fields: [runId], references: [id], onDelete: Cascade)
+  productId  String
+  product    Product     @relation(fields: [productId], references: [id], onDelete: Cascade)
+  locationId String
+  location   Location    @relation(fields: [locationId], references: [id], onDelete: Cascade)
+  modelUsed  String
+  reason     String?
+  holdout    Int         @default(0)
+  mape       Float?
+  wape       Float?
+  bias       Float?
+  createdAt  DateTime    @default(now())
+  updatedAt  DateTime    @updatedAt
+
+  @@unique([runId, productId, locationId])
+  @@index([tenantId])
+}
+
+model ForecastOverride {
+  id         String   @id @default(cuid())
+  tenantId   String
+  tenant     Tenant   @relation(fields: [tenantId], references: [id], onDelete: Cascade)
+  productId  String
+  product    Product  @relation(fields: [productId], references: [id], onDelete: Cascade)
+  locationId String
+  location   Location @relation(fields: [locationId], references: [id], onDelete: Cascade)
+  weekStart  DateTime @db.Date
+  quantity   Decimal  @db.Decimal(14, 3)
+  reason     String   @db.Text
+  userId     String?
+  createdAt  DateTime @default(now())
+  updatedAt  DateTime @updatedAt
+
+  @@unique([tenantId, productId, locationId, weekStart])
+  @@index([tenantId, weekStart])
 }

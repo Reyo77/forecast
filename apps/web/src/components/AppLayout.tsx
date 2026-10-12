@@ -13,6 +13,7 @@ export const NAV_ITEMS: { to: string; label: string; permission: Permission }[] 
   { to: '/inventory', label: 'Inventory', permission: 'masterdata:read' },
   { to: '/sales', label: 'Sales', permission: 'sales:read' },
   { to: '/import', label: 'Import', permission: 'import:sales' },
+  { to: '/forecasts', label: 'Forecasts', permission: 'forecast:read' },
   { to: '/team', label: 'Team', permission: 'team:read' },
   { to: '/billing', label: 'Billing', permission: 'billing:read' },
   { to: '/audit-log', label: 'Audit log', permission: 'audit:read' },

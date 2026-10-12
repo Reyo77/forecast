@@ -18,6 +18,8 @@ import { SuppliersPage } from './features/masterdata/SuppliersPage';
 import { InventoryPage } from './features/masterdata/InventoryPage';
 import { ImportPage } from './features/sales/ImportPage';
 import { ExplorerPage } from './features/sales/ExplorerPage';
+import { ForecastsPage } from './features/forecast/ForecastsPage';
+import { ForecastRunPage } from './features/forecast/ForecastRunPage';
 import { PricingPage } from './features/billing/PricingPage';
 import { BillingPage } from './features/billing/BillingPage';
 import { InvoicePage, InvoicesPage } from './features/billing/InvoicesPage';
@@ -51,6 +53,10 @@ export function App() {
             </Route>
             <Route element={<RequirePermission permission="import:sales" />}>
               <Route path="/import" element={<ImportPage />} />
+            </Route>
+            <Route element={<RequirePermission permission="forecast:read" />}>
+              <Route path="/forecasts" element={<ForecastsPage />} />
+              <Route path="/forecasts/:id" element={<ForecastRunPage />} />
             </Route>
             <Route element={<RequirePermission permission="team:read" />}>
               <Route path="/team" element={<TeamPage />} />

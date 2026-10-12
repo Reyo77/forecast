@@ -174,3 +174,119 @@ export interface OpenOrderDto {
   expectedDate: string;
   isLate: boolean;
 }
+
+// ---------------- Forecasts ----------------
+export const FORECAST_MODELS = [
+  'naive',
+  'seasonal_naive',
+  'moving_average',
+  'ses',
+  'holt',
+  'holt_winters',
+  'croston',
+] as const;
+export const MODEL_LABELS: Record<(typeof FORECAST_MODELS)[number], string> = {
+  naive: 'Naive',
+  seasonal_naive: 'Seasonal naive',
+  moving_average: 'Moving average',
+  ses: 'Exponential smoothing',
+  holt: 'Holt (trend)',
+  holt_winters: 'Holt-Winters (seasonal)',
+  croston: 'Croston (intermittent)',
+};
+
+export const createRunSchema = z.object({
+  horizonWeeks: z
+    .number()
+    .int()
+    .min(4, 'Horizon must be at least 4 weeks')
+    .max(52, 'Horizon cannot exceed 52 weeks'),
+  method: z.union([z.literal('AUTO'), z.enum(FORECAST_MODELS)]).default('AUTO'),
+  filters: z
+    .object({
+      categoryId: id.optional(),
+      locationId: id.optional(),
+      productId: id.optional(),
+    })
+    .default({}),
+});
+export type CreateRunInput = z.infer<typeof createRunSchema>;
+
+export const overrideInputSchema = z.object({
+  productId: id,
+  locationId: id,
+  weekStart: z.coerce.date(),
+  quantity: quantity,
+  reason: z.string().trim().min(3, 'A reason is required').max(500),
+});
+export type OverrideInput = z.infer<typeof overrideInputSchema>;
+
+export interface ForecastRunDto {
+  id: string;
+  status: 'PENDING' | 'RUNNING' | 'DONE' | 'FAILED';
+  horizonWeeks: number;
+  method: string;
+  filters: { categoryId?: string; locationId?: string; productId?: string };
+  progress: number;
+  seriesTotal: number;
+  seriesDone: number;
+  seriesFailed: number;
+  failures: { productId: string; locationId: string; error: string }[] | null;
+  asOfWeek: string | null;
+  startedAt: string | null;
+  finishedAt: string | null;
+  error: string | null;
+  createdAt: string;
+}
+
+export interface AccuracyRow {
+  productId: string;
+  productSku: string;
+  productName: string;
+  locationId: string;
+  locationCode: string;
+  modelUsed: string;
+  reason: string | null;
+  mape: number | null;
+  wape: number | null;
+  bias: number | null;
+}
+
+export interface SeriesPoint {
+  weekStart: string;
+  quantity: number;
+}
+export interface ForecastPoint {
+  weekStart: string;
+  quantity: number;
+  lower: number;
+  upper: number;
+  /** The planner's override for this week, if any (quantity replaces the model forecast). */
+  override: number | null;
+  /** quantity, or the override when one exists. */
+  final: number;
+}
+export interface OverrideDto {
+  id: string;
+  productId: string;
+  productSku: string;
+  locationId: string;
+  locationCode: string;
+  weekStart: string;
+  quantity: number;
+  reason: string;
+  updatedAt: string;
+}
+export interface SeriesResponse {
+  product: { id: string; sku: string; name: string };
+  location: { id: string; code: string } | null;
+  modelUsed: string;
+  accuracy: {
+    mape: number | null;
+    wape: number | null;
+    bias: number | null;
+    reason: string | null;
+  } | null;
+  history: SeriesPoint[];
+  forecast: ForecastPoint[];
+}

@@ -174,3 +174,24 @@ export const createOpenOrder = (
       supplierId: over.supplierId ?? null,
     },
   });
+
+/** Writes one sales record per week ending on `endMonday` (an ISO Monday), oldest first. */
+export async function createSales(
+  tenantId: string,
+  productId: string,
+  locationId: string,
+  values: number[],
+  endMonday = '2025-06-02',
+) {
+  const end = new Date(`${endMonday}T00:00:00Z`).getTime();
+  const data = values.map((q, i) => ({
+    tenantId,
+    productId,
+    locationId,
+    date: new Date(end - (values.length - 1 - i) * 7 * 86400_000),
+    quantity: q,
+    revenueCents: q * 100,
+  }));
+  for (let i = 0; i < data.length; i += 1000)
+    await prisma.salesRecord.createMany({ data: data.slice(i, i + 1000) });
+}
