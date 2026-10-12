@@ -20,3 +20,7 @@ class RO {
   disconnect() {}
 }
 (globalThis as unknown as { ResizeObserver: typeof RO }).ResizeObserver ??= RO;
+
+// Full-suite runs execute many files in parallel; give async queries (findBy*/waitFor) headroom.
+import { configure } from '@testing-library/react';
+configure({ asyncUtilTimeout: 4000 });

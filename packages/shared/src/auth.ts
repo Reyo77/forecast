@@ -32,6 +32,11 @@ export const changePasswordSchema = z.object({
 });
 export type ChangePasswordInput = z.infer<typeof changePasswordSchema>;
 
+export const updateProfileSchema = z.object({
+  name: z.string().trim().min(1, 'Name is required').max(100),
+});
+export type UpdateProfileInput = z.infer<typeof updateProfileSchema>;
+
 export interface AuthUser {
   id: string;
   email: string;

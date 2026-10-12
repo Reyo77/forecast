@@ -42,6 +42,7 @@ export async function createUser(
     email?: string;
     password?: string;
     isActive?: boolean;
+    name?: string;
   } = {},
 ) {
   const role = opts.role ?? 'PLANNER';
@@ -54,7 +55,7 @@ export async function createUser(
   return prisma.user.create({
     data: {
       email: opts.email ?? `user${next()}@example.com`,
-      name: `User ${counter}`,
+      name: opts.name ?? `User ${counter}`,
       passwordHash: await hashPassword(opts.password ?? TEST_PASSWORD),
       role,
       tenantId,

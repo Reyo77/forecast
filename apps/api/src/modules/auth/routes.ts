@@ -6,6 +6,7 @@ import {
   acceptInviteSchema,
   resetPasswordSchema,
   signupSchema,
+  updateProfileSchema,
   type AuthResponse,
 } from '@supplycast/shared';
 import { prisma } from '../../db/client';
@@ -118,6 +119,17 @@ export function authRouter(opts: AuthRouterOptions): { auth: Router; invites: Ro
         tenantName: tenant?.name ?? null,
         impersonating: req.auth!.impersonatorId ? { by: req.auth!.impersonatorId } : null,
       });
+    }),
+  );
+
+  router.patch(
+    '/me',
+    ...opts.guards.authed(),
+    wrap(async (req, res) => {
+      const { name } = updateProfileSchema.parse(req.body);
+      const user = await prisma.user.update({ where: { id: req.auth!.userId }, data: { name } });
+      await auditReq(req, 'auth.profile_updated', 'User', user.id);
+      res.json({ user: service.toAuthUser(user) });
     }),
   );
 

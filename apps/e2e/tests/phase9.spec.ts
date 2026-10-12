@@ -62,6 +62,12 @@ test('Phase 9: landing page → sign up → dark mode → command palette → re
 
   // Settings: switch theme back to light, log out lands on the landing page.
   await page.getByRole('link', { name: 'Settings' }).click();
+  await page.getByLabel('Name', { exact: true }).fill('Nia Renamed');
+  await page.getByRole('button', { name: 'Save changes' }).click();
+  await expect(page.getByText('Profile updated.')).toBeVisible();
+  await expect(page.getByTestId('whoami')).toContainText('Nia Renamed (OWNER)');
+  await page.reload();
+  await expect(page.getByTestId('whoami')).toContainText('Nia Renamed');
   await page.getByRole('radio', { name: /Light/ }).click();
   await expect(page.locator('html')).not.toHaveClass(/dark/);
   await page.getByRole('button', { name: 'Log out' }).click();

@@ -1,6 +1,7 @@
+import { useState, type FormEvent } from 'react';
 import { Link } from 'react-router-dom';
 import { Icon } from '../../components/Icon';
-import { PageHeader } from '../../components/ui';
+import { Notice, PageHeader, errText } from '../../components/ui';
 import { useTheme, type ThemeChoice } from '../../theme';
 import { useAuth } from '../auth/AuthContext';
 
@@ -11,28 +12,64 @@ const OPTIONS: { value: ThemeChoice; label: string; icon: string; hint: string }
 ];
 
 export function SettingsPage() {
-  const { user } = useAuth();
+  const { user, updateProfile } = useAuth();
   const theme = useTheme();
+  const [name, setName] = useState(user?.name ?? '');
+  const [busy, setBusy] = useState(false);
+  const [msg, setMsg] = useState<string | null>(null);
+  const [err, setErr] = useState<string | null>(null);
+  const dirty = name.trim() !== '' && name.trim() !== user?.name;
+  async function save(e: FormEvent) {
+    e.preventDefault();
+    setBusy(true);
+    setMsg(null);
+    setErr(null);
+    try {
+      await updateProfile(name.trim());
+      setMsg('Profile updated.');
+    } catch (ex) {
+      setErr(errText(ex));
+    } finally {
+      setBusy(false);
+    }
+  }
   return (
     <section className="space-y-6">
       <PageHeader title="Settings" subtitle="Your profile and how SupplyCast looks for you." />
 
       <div className="card p-5">
         <h2 className="mb-3">Profile</h2>
-        <dl className="grid gap-4 text-sm sm:grid-cols-3">
-          <div>
-            <dt className="text-gray-500">Name</dt>
-            <dd className="mt-0.5 font-medium text-gray-900">{user?.name}</dd>
+        <form onSubmit={save} className="space-y-4" aria-label="Profile">
+          {msg && <Notice kind="success">{msg}</Notice>}
+          {err && <Notice kind="error">{err}</Notice>}
+          <div className="grid gap-4 sm:grid-cols-3">
+            <label>
+              Name
+              <input
+                value={name}
+                onChange={(e) => setName(e.target.value)}
+                maxLength={100}
+                required
+                className="w-full"
+              />
+            </label>
+            <div className="text-sm">
+              <p className="text-gray-600">Email</p>
+              <p className="mt-2.5 font-medium text-gray-900">{user?.email}</p>
+            </div>
+            <div className="text-sm">
+              <p className="text-gray-600">Role</p>
+              <p className="mt-2.5 font-medium text-gray-900">{user?.role}</p>
+            </div>
           </div>
-          <div>
-            <dt className="text-gray-500">Email</dt>
-            <dd className="mt-0.5 font-medium text-gray-900">{user?.email}</dd>
-          </div>
-          <div>
-            <dt className="text-gray-500">Role</dt>
-            <dd className="mt-0.5 font-medium text-gray-900">{user?.role}</dd>
-          </div>
-        </dl>
+          <button
+            type="submit"
+            disabled={!dirty || busy}
+            className="rounded-lg bg-blue-600 px-4 py-2 text-sm font-medium text-white disabled:opacity-50"
+          >
+            {busy ? 'Saving…' : 'Save changes'}
+          </button>
+        </form>
       </div>
 
       <div className="card p-5">

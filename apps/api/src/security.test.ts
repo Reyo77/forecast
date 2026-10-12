@@ -31,7 +31,7 @@ const PUBLIC = new Set([
   'POST /invites/accept',
 ]);
 /** Authenticated routes that apply to the caller's own account and need no special permission. */
-const SELF_SERVICE = new Set(['GET /auth/me', 'POST /auth/change-password']);
+const SELF_SERVICE = new Set(['GET /auth/me', 'PATCH /auth/me', 'POST /auth/change-password']);
 
 describe('route audit (Feature 8.2)', () => {
   const routes = listRoutes(app);

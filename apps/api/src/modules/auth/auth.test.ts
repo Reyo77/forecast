@@ -230,6 +230,64 @@ describe('POST /auth/logout', () => {
   });
 });
 
+describe('PATCH /auth/me', () => {
+  it('updates only the caller’s own name, trims it and writes an audit entry', async () => {
+    const user = await createUser({ role: 'PLANNER', name: 'Old Name' });
+    const other = await createUser({
+      role: 'PLANNER',
+      name: 'Untouched',
+      tenantId: user.tenantId!,
+    });
+    const { token } = await loginAs(app, user.email);
+    const res = await request(app)
+      .patch('/auth/me')
+      .set(bearer(token))
+      .send({ name: '  New Name  ' });
+    expect(res.status).toBe(200);
+    expect(res.body.user).toMatchObject({ id: user.id, name: 'New Name', role: 'PLANNER' });
+    expect((await prisma.user.findUniqueOrThrow({ where: { id: user.id } })).name).toBe('New Name');
+    expect((await prisma.user.findUniqueOrThrow({ where: { id: other.id } })).name).toBe(
+      'Untouched',
+    );
+    expect((await request(app).get('/auth/me').set(bearer(token))).body.user.name).toBe('New Name');
+    expect(
+      (await prisma.auditLog.findMany({ where: { actorId: user.id } })).map((a) => a.action),
+    ).toContain('auth.profile_updated');
+  });
+
+  it('cannot change role, email or tenant through this endpoint', async () => {
+    const user = await createUser({ role: 'VIEWER' });
+    const { token } = await loginAs(app, user.email);
+    const res = await request(app)
+      .patch('/auth/me')
+      .set(bearer(token))
+      .send({ name: 'Ok', role: 'OWNER', email: 'evil@example.com', tenantId: 'x' });
+    expect(res.status).toBe(200);
+    const fresh = await prisma.user.findUniqueOrThrow({ where: { id: user.id } });
+    expect(fresh).toMatchObject({ role: 'VIEWER', email: user.email, tenantId: user.tenantId });
+  });
+
+  it('rejects empty or over-long names (400) and anonymous callers (401)', async () => {
+    const user = await createUser();
+    const { token } = await loginAs(app, user.email);
+    for (const name of ['', '   ', 'x'.repeat(101)]) {
+      expect((await request(app).patch('/auth/me').set(bearer(token)).send({ name })).status).toBe(
+        400,
+      );
+    }
+    expect((await request(app).patch('/auth/me').set(bearer(token)).send({})).status).toBe(400);
+    expect((await request(app).patch('/auth/me').send({ name: 'A' })).status).toBe(401);
+  });
+
+  it('works for a Super Admin (no tenant)', async () => {
+    const sa = await createUser({ role: 'SUPER_ADMIN', name: 'Root' });
+    const { token } = await loginAs(app, sa.email);
+    const res = await request(app).patch('/auth/me').set(bearer(token)).send({ name: 'Root 2' });
+    expect(res.status).toBe(200);
+    expect(res.body.user.name).toBe('Root 2');
+  });
+});
+
 describe('GET /auth/me', () => {
   it('returns the current user', async () => {
     const user = await createUser({ role: 'VIEWER' });

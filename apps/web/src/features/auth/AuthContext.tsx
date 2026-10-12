@@ -25,6 +25,7 @@ interface AuthState {
   acceptInvite: (input: AcceptInviteInput) => Promise<void>;
   logout: () => Promise<void>;
   changePassword: (input: ChangePasswordInput) => Promise<void>;
+  updateProfile: (name: string) => Promise<void>;
   suspended: boolean;
   impersonation: { tenantName: string } | null;
   startImpersonation: (tenantId: string) => Promise<void>;
@@ -92,6 +93,10 @@ export function AuthProvider({ children }: { children: ReactNode }) {
       signup: async (input) => accept(await api<AuthResponse>('/auth/signup', 'POST', input)),
       changePassword: async (input) =>
         accept(await api<AuthResponse>('/auth/change-password', 'POST', input)),
+      updateProfile: async (name) => {
+        const res = await api<{ user: AuthUser }>('/auth/me', 'PATCH', { name });
+        setUser(res.user);
+      },
       logout: async () => {
         await api('/auth/logout', 'POST').catch(() => undefined);
         tokenStore.set(null);

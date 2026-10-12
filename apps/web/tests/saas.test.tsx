@@ -243,3 +243,37 @@ describe('role access to the new pages', () => {
     expect(await screen.findByTestId('plan-orders')).toBeInTheDocument();
   });
 });
+
+describe('profile editing', () => {
+  it('saves a new name, updates the header and shows a confirmation', async () => {
+    const fn = mockApi({
+      ...loggedInAs(),
+      'PATCH /auth/me': (b) =>
+        json(200, { user: makeUser({ name: (b as { name: string }).name }) }),
+    });
+    renderApp('/settings');
+    const input = await screen.findByLabelText('Name');
+    const save = screen.getByRole('button', { name: 'Save changes' });
+    expect(save).toBeDisabled();
+    await userEvent.clear(input);
+    await userEvent.type(input, 'Olivia Owner');
+    await userEvent.click(save);
+    expect(await screen.findByText('Profile updated.')).toBeInTheDocument();
+    expect(calls(fn, 'PATCH /auth/me')).toHaveLength(1);
+    expect(screen.getByTestId('whoami')).toHaveTextContent('Olivia Owner (OWNER)');
+    expect(screen.getByRole('button', { name: 'Save changes' })).toBeDisabled();
+  });
+
+  it('shows the server error', async () => {
+    mockApi({
+      ...loggedInAs(),
+      'PATCH /auth/me': () =>
+        json(400, { error: { code: 'VALIDATION', message: 'Name is required' } }),
+    });
+    renderApp('/settings');
+    const input = await screen.findByLabelText('Name');
+    await userEvent.type(input, 'x');
+    await userEvent.click(screen.getByRole('button', { name: 'Save changes' }));
+    expect(await screen.findByRole('alert')).toHaveTextContent('Name is required');
+  });
+});
