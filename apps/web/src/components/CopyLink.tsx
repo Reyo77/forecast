@@ -1,6 +1,15 @@
 import { useState } from 'react';
 
-export function CopyLink({ label, link }: { label: string; link: string }) {
+export function CopyLink({
+  label,
+  link,
+  emailedTo,
+}: {
+  label: string;
+  link: string;
+  /** Set when the same link was also emailed to this address. */
+  emailedTo?: string;
+}) {
   const [copied, setCopied] = useState(false);
   async function copy() {
     try {
@@ -31,7 +40,13 @@ export function CopyLink({ label, link }: { label: string; link: string }) {
         </button>
       </div>
       <p className="mt-1 text-xs text-gray-600">
-        Share this link manually — it is shown only once.
+        {emailedTo ? (
+          <span data-testid="emailed">
+            ✉ We also emailed this link to {emailedTo}. It is shown here only once.
+          </span>
+        ) : (
+          'Share this link manually — it is shown only once.'
+        )}
       </p>
     </div>
   );

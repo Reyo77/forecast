@@ -64,6 +64,7 @@ First time only: `npx playwright install chromium`.
 | **AI (Gemini)**      | Forecast explanation, plain-English scenario builder (proposes levers, saves nothing until confirmed), scenario risk summary, tool-calling assistant over a fixed allow-list of read-only functions.                                                                                                 |
 | **Insights**         | **Reorder plan** (planned purchase orders with supplier, order/arrival dates, quantity and spend, urgent filter, CSV export) and **ABC analysis** (Pareto chart + A/B/C classes by revenue).                                                                                                         |
 | **Product polish**   | Public landing page, split-screen auth pages, **light / dark / system theme** (persisted, no flash), Ctrl/⌘+K command palette, settings page, 404 + legal pages, responsive sidebar layout.                                                                                                          |
+| **Email**            | Invites, password-reset links and a welcome message are emailed (SMTP via `EMAIL_PROVIDER=smtp`; the default `log` driver records without sending). Mail failures never block the action — the copy-link flow always remains.                                                                        |
 | **Operations**       | Super Admin console (tenants, plans, MRR, trial conversion, AI usage, failed jobs, suspend/reactivate, read-only impersonation), audit log, in-app notifications, background job runner with retries.                                                                                                |
 
 ---
@@ -224,7 +225,7 @@ docker compose -f docker-compose.prod.yml up -d --build
 
 ### Environment variables
 
-See `.env.example`. `AUTH_RATE_LIMIT_MAX` (default 20 per 15 min per IP) can be raised for local end-to-end runs. The API refuses to start if a required variable is missing (validated with Zod in `apps/api/src/config`).
+See `.env.example`. `AUTH_RATE_LIMIT_MAX` (default 20 per 15 min per IP) can be raised for local end-to-end runs. Email uses `EMAIL_PROVIDER` (`log`|`smtp`), `EMAIL_FROM` and `SMTP_*`. The API refuses to start if a required variable is missing (validated with Zod in `apps/api/src/config`).
 
 ---
 

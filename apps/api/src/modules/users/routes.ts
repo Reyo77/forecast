@@ -14,6 +14,9 @@ import type { Guards } from '../../middleware/guards';
 import { paged, paginationSchema, skipTake } from '../../lib/pagination';
 import { auditReq } from '../audit/service';
 import { createWithinLimit } from '../billing/limits';
+import { inviteEmail, passwordResetEmail } from '../../email/templates';
+import { trySend } from '../../email/mailers';
+import type { Mailer } from '../../email/types';
 import { INVITE_TTL_MS, newToken, RESET_TTL_MS } from './service';
 
 const userSelect = {
@@ -37,8 +40,8 @@ const toTeamUser = (u: {
   createdAt: u.createdAt.toISOString(),
 });
 
-export function usersRouter(opts: { guards: Guards; appUrl: string }): Router {
-  const { guards, appUrl } = opts;
+export function usersRouter(opts: { guards: Guards; appUrl: string; mailer: Mailer }): Router {
+  const { guards, appUrl, mailer } = opts;
   const router = Router();
 
   router.get('/users', ...guards.tenant('team:read'), async (req, res, next) => {
@@ -128,7 +131,17 @@ export function usersRouter(opts: { guards: Guards; appUrl: string }): Router {
         prisma.passwordResetToken.create({ data: { userId: target.id, tokenHash, expiresAt } }),
       ]);
       await auditReq(req, 'user.reset_link_created', 'User', target.id, { email: target.email });
-      res.status(201).json({ link: `${appUrl}/reset-password?token=${token}`, expiresAt });
+      const link = `${appUrl}/reset-password?token=${token}`;
+      const emailed = await trySend(
+        mailer,
+        passwordResetEmail({
+          to: target.email,
+          name: target.name,
+          link,
+          expiresInHours: Math.round(RESET_TTL_MS / 3_600_000),
+        }),
+      );
+      res.status(201).json({ link, expiresAt, emailed });
     } catch (err) {
       next(err);
     }
@@ -168,6 +181,22 @@ export function usersRouter(opts: { guards: Guards; appUrl: string }): Router {
         email: input.email,
         role: input.role,
       });
+      const link = `${appUrl}/accept-invite?token=${token}`;
+      const [inviter, tenant] = await Promise.all([
+        prisma.user.findUnique({ where: { id: req.auth!.userId }, select: { name: true } }),
+        prisma.tenant.findUnique({ where: { id: req.tenantId! }, select: { name: true } }),
+      ]);
+      const emailed = await trySend(
+        mailer,
+        inviteEmail({
+          to: invite.email,
+          companyName: tenant?.name ?? 'your team',
+          inviterName: inviter?.name ?? 'A teammate',
+          role: invite.role,
+          link,
+          expiresInDays: Math.round(INVITE_TTL_MS / 86_400_000),
+        }),
+      );
       res.status(201).json({
         invite: {
           id: invite.id,
@@ -175,7 +204,8 @@ export function usersRouter(opts: { guards: Guards; appUrl: string }): Router {
           role: invite.role,
           expiresAt: invite.expiresAt,
         },
-        link: `${appUrl}/accept-invite?token=${token}`,
+        link,
+        emailed,
       });
     } catch (err) {
       next(err);

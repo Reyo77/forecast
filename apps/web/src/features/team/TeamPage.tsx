@@ -17,7 +17,7 @@ export function TeamPage() {
   const users = useQuery({ queryKey: ['team', 'users'], queryFn: teamApi.users });
   const invites = useQuery({ queryKey: ['team', 'invites'], queryFn: teamApi.invites });
   const [error, setError] = useState<string | null>(null);
-  const [link, setLink] = useState<{ label: string; url: string } | null>(null);
+  const [link, setLink] = useState<{ label: string; url: string; emailedTo?: string } | null>(null);
   const [showInvite, setShowInvite] = useState(false);
   const [email, setEmail] = useState('');
   const [role, setRole] = useState<AssignableRole>('PLANNER');
@@ -31,7 +31,11 @@ export function TeamPage() {
   const invite = useMutation({
     mutationFn: teamApi.invite,
     onSuccess: (res) => {
-      setLink({ label: `Invite link for ${res.invite.email} (valid 7 days)`, url: res.link });
+      setLink({
+        label: `Invite link for ${res.invite.email} (valid 7 days)`,
+        url: res.link,
+        emailedTo: res.emailed ? res.invite.email : undefined,
+      });
       setEmail('');
       setShowInvite(false);
       setError(null);
@@ -56,7 +60,11 @@ export function TeamPage() {
     mutationFn: teamApi.resetLink,
     onSuccess: (res, id) => {
       const name = users.data?.items.find((u) => u.id === id)?.email ?? 'user';
-      setLink({ label: `Password reset link for ${name} (valid 24 hours)`, url: res.link });
+      setLink({
+        label: `Password reset link for ${name} (valid 24 hours)`,
+        url: res.link,
+        emailedTo: res.emailed ? name : undefined,
+      });
       setError(null);
     },
     onError,
@@ -103,7 +111,7 @@ export function TeamPage() {
           {notice}
         </p>
       )}
-      {link && <CopyLink label={link.label} link={link.url} />}
+      {link && <CopyLink label={link.label} link={link.url} emailedTo={link.emailedTo} />}
 
       {showInvite && (
         <form

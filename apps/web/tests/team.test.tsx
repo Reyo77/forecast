@@ -74,6 +74,7 @@ describe('Team page', () => {
             expired: false,
           },
           link: 'http://localhost:5173/accept-invite?token=abc123',
+          emailed: true,
         }),
     });
     renderApp('/team');
@@ -85,10 +86,38 @@ describe('Team page', () => {
       'http://localhost:5173/accept-invite?token=abc123',
     );
     expect(within(box).getByRole('button', { name: 'Copy link' })).toBeInTheDocument();
+    expect(within(box).getByTestId('emailed')).toHaveTextContent(
+      'emailed this link to joe@acme.com',
+    );
     expect(JSON.parse(calls(fetchMock, 'POST /invites')[0]![1]!.body as string)).toEqual({
       email: 'joe@acme.com',
       role: 'PLANNER',
     });
+  });
+
+  it('asks you to share the link yourself when no email was sent', async () => {
+    setup({
+      'POST /invites': () =>
+        json(201, {
+          invite: {
+            id: 'i3',
+            email: 'ann@acme.com',
+            role: 'VIEWER',
+            expiresAt: '2099-01-01',
+            createdAt: '2026-01-01',
+            expired: false,
+          },
+          link: 'http://localhost:5173/accept-invite?token=zzz',
+          emailed: false,
+        }),
+    });
+    renderApp('/team');
+    await userEvent.click(await screen.findByRole('button', { name: 'Invite user' }));
+    await userEvent.type(screen.getByLabelText('Email'), 'ann@acme.com');
+    await userEvent.click(screen.getByRole('button', { name: 'Create invite' }));
+    const box = await screen.findByTestId('copy-link');
+    expect(within(box).queryByTestId('emailed')).not.toBeInTheDocument();
+    expect(box).toHaveTextContent('Share this link manually');
   });
 
   it('changes a role and deactivates a user', async () => {
@@ -112,12 +141,13 @@ describe('Team page', () => {
   it('generates a reset link for a user', async () => {
     setup({
       'POST /users/u2/reset-link': () =>
-        json(201, { link: 'http://x/reset-password?token=zzz', expiresAt: '2099' }),
+        json(201, { link: 'http://x/reset-password?token=zzz', expiresAt: '2099', emailed: true }),
     });
     renderApp('/team');
     const row = await screen.findByTestId('user-plan@acme.com');
     await userEvent.click(within(row).getByRole('button', { name: 'Reset link' }));
     expect(await screen.findByText(/Password reset link for plan@acme.com/)).toBeInTheDocument();
+    expect(screen.getByTestId('emailed')).toHaveTextContent('plan@acme.com');
   });
 
   it('revokes an invite', async () => {

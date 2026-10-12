@@ -24,6 +24,8 @@ import { notificationsRouter } from './modules/notifications/routes';
 import { dashboardRouter } from './modules/dashboard/routes';
 import { insightsRouter } from './modules/insights/routes';
 import { auditRouter } from './modules/audit/routes';
+import { LogMailer } from './email/mailers';
+import type { Mailer } from './email/types';
 
 export type AppConfig = Pick<Env, 'APP_URL' | 'JWT_ACCESS_SECRET'> & {
   NODE_ENV?: Env['NODE_ENV'];
@@ -35,9 +37,12 @@ export interface AppOptions {
   /** The AI backend (Gemini in production, a fake in tests). Defaults to "not configured". */
   aiClient?: AiClient;
   aiTimeoutMs?: number;
+  /** Where transactional email goes. Defaults to the log driver (nothing is delivered). */
+  mailer?: Mailer;
 }
 
 export function createApp(env: AppConfig, options: AppOptions = {}) {
+  const mailer = options.mailer ?? new LogMailer();
   const app = express();
   app.disable('x-powered-by');
   app.use(pinoHttp({ logger }));
@@ -57,11 +62,13 @@ export function createApp(env: AppConfig, options: AppOptions = {}) {
     guards,
     production: env.NODE_ENV === 'production',
     loginRateLimitMax: options.loginRateLimitMax ?? 20,
+    mailer,
+    appUrl: env.APP_URL,
   });
   app.use('/auth', authRouters.auth);
   app.use('/invites', authRouters.invites);
 
-  app.use(usersRouter({ guards, appUrl: env.APP_URL }));
+  app.use(usersRouter({ guards, appUrl: env.APP_URL, mailer }));
   app.use('/audit-logs', auditRouter(guards));
   app.use(catalogRouter(guards));
   app.use(supplyRouter(guards));

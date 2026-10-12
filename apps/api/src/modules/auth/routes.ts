@@ -17,10 +17,15 @@ import * as service from './service';
 import * as usersService from '../users/service';
 import { auditReq, audit } from '../audit/service';
 import { REFRESH_TTL_MS } from './tokens';
+import { welcomeEmail } from '../../email/templates';
+import { trySend } from '../../email/mailers';
+import type { Mailer } from '../../email/types';
 
 const COOKIE_NAME = 'refresh_token';
 
 export interface AuthRouterOptions {
+  mailer: Mailer;
+  appUrl: string;
   accessSecret: string;
   guards: Guards;
   production: boolean;
@@ -66,6 +71,16 @@ export function authRouter(opts: AuthRouterOptions): { auth: Router; invites: Ro
         'tenant.created',
         'Tenant',
         session.user.tenantId,
+      );
+      const input = signupSchema.parse(req.body);
+      void trySend(
+        opts.mailer,
+        welcomeEmail({
+          to: session.user.email,
+          name: session.user.name,
+          companyName: input.companyName,
+          appUrl: opts.appUrl,
+        }),
       );
       send(res, 201, session);
     }),
