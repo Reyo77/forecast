@@ -114,7 +114,7 @@ function AccuracyGauge({ pct }: { pct: number }) {
             isAnimationActive={false}
           >
             <Cell fill={color} />
-            <Cell fill="#eef1f6" />
+            <Cell fill="var(--chart-grid)" />
           </Pie>
         </PieChart>
       </ResponsiveContainer>
@@ -189,7 +189,7 @@ export function HomePage() {
 
       {empty && (
         <section
-          className="rounded-xl border border-indigo-200 bg-gradient-to-br from-indigo-50 to-white p-6"
+          className="rounded-xl border border-indigo-200 bg-indigo-50 p-6"
           data-testid="getting-started"
         >
           <h2 className="text-lg font-semibold">Getting started</h2>
@@ -288,8 +288,8 @@ export function HomePage() {
                       stroke="var(--series-1)"
                       strokeWidth={2.5}
                       fill="url(#dash-fill)"
-                      animationDuration={600}
-                      activeDot={{ r: 5, stroke: '#fff', strokeWidth: 2 }}
+                      isAnimationActive={false}
+                      activeDot={{ r: 5, stroke: 'var(--chart-surface)', strokeWidth: 2 }}
                     />
                   </AreaChart>
                 </ResponsiveContainer>

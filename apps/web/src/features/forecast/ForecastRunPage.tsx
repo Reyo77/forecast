@@ -334,7 +334,7 @@ export function ForecastRunPage() {
                                 value: 'Forecast →',
                                 position: 'insideTopRight',
                                 fontSize: 11,
-                                fill: '#64748b',
+                                fill: 'var(--chart-ink-2)',
                               }}
                             />
                           )}
@@ -375,7 +375,7 @@ export function ForecastRunPage() {
                             dot={{
                               r: 5.5,
                               fill: 'var(--series-3)',
-                              stroke: '#fff',
+                              stroke: 'var(--chart-surface)',
                               strokeWidth: 2,
                             }}
                             activeDot={{ r: 7 }}

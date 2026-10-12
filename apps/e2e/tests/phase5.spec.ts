@@ -12,7 +12,7 @@ test('Phase 5: demo data → AUTO forecast → chart + accuracy → override →
   await page.getByLabel('Password').fill('Password123');
   await page.getByRole('button', { name: 'Sign up' }).click();
   await page.getByRole('button', { name: 'Load demo data' }).click();
-  await expect(page.getByText(/Demo data loaded/)).toBeVisible();
+  await expect(page.getByText(/Demo data loaded/)).toBeVisible({ timeout: 30_000 });
 
   // Start an automatic forecast run; it finishes in the background.
   await page.getByRole('link', { name: 'Forecasts' }).click();

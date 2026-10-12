@@ -13,6 +13,8 @@ export const envSchema = z.object({
   GEMINI_MODEL: z.string().min(1),
   /** `fake` swaps in a deterministic offline AI (development and end-to-end tests only). */
   AI_PROVIDER: z.enum(['gemini', 'fake']).default('gemini'),
+  /** Sign-up/login attempts allowed per IP per 15 minutes. Raise only for local end-to-end runs. */
+  AUTH_RATE_LIMIT_MAX: z.coerce.number().int().positive().default(20),
   SIMULATED_PAYMENTS: z.enum(['true', 'false']).transform((v) => v === 'true'),
   SUPER_ADMIN_EMAIL: z.string().email(),
   SUPER_ADMIN_PASSWORD: z.string().min(1),

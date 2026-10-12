@@ -1,4 +1,5 @@
 import { Route, Routes } from 'react-router-dom';
+import { ThemeProvider } from './theme';
 import { AuthProvider } from './features/auth/AuthContext';
 import { ProtectedRoute } from './features/auth/ProtectedRoute';
 import { RequirePermission } from './features/auth/RequirePermission';
@@ -30,62 +31,74 @@ import { MetricsPage } from './features/admin/MetricsPage';
 import { TenantsPage } from './features/admin/TenantsPage';
 import { TenantDetailPage } from './features/admin/TenantDetailPage';
 import { PlansAdminPage } from './features/admin/PlansAdminPage';
+import { ReorderPlanPage } from './features/insights/ReorderPlanPage';
+import { AbcPage } from './features/insights/AbcPage';
+import { SettingsPage } from './features/settings/SettingsPage';
+import { NotFoundPage, PrivacyPage, TermsPage } from './features/marketing/LegalPages';
 
 export function App() {
   return (
-    <AuthProvider>
-      <Routes>
-        <Route path="/login" element={<LoginPage />} />
-        <Route path="/signup" element={<SignupPage />} />
-        <Route path="/accept-invite" element={<AcceptInvitePage />} />
-        <Route path="/reset-password" element={<ResetPasswordPage />} />
-        <Route path="/pricing" element={<PricingPage />} />
-        <Route element={<ProtectedRoute />}>
-          <Route element={<AppLayout />}>
-            <Route path="/" element={<HomePage />} />
-            <Route path="/change-password" element={<ChangePasswordPage />} />
-            <Route element={<RequirePermission permission="masterdata:read" />}>
-              <Route path="/products" element={<ProductsPage />} />
-              <Route path="/products/:id" element={<ProductDetailPage />} />
-              <Route path="/locations" element={<LocationsPage />} />
-              <Route path="/suppliers" element={<SuppliersPage />} />
-              <Route path="/inventory" element={<InventoryPage />} />
-            </Route>
-            <Route element={<RequirePermission permission="sales:read" />}>
-              <Route path="/sales" element={<ExplorerPage />} />
-            </Route>
-            <Route element={<RequirePermission permission="import:sales" />}>
-              <Route path="/import" element={<ImportPage />} />
-            </Route>
-            <Route element={<RequirePermission permission="forecast:read" />}>
-              <Route path="/forecasts" element={<ForecastsPage />} />
-              <Route path="/forecasts/:id" element={<ForecastRunPage />} />
-            </Route>
-            <Route element={<RequirePermission permission="scenario:read" />}>
-              <Route path="/scenarios" element={<ScenariosPage />} />
-              <Route path="/scenarios/compare" element={<ComparePage />} />
-              <Route path="/scenarios/:id" element={<ScenarioPage />} />
-            </Route>
-            <Route element={<RequirePermission permission="team:read" />}>
-              <Route path="/team" element={<TeamPage />} />
-            </Route>
-            <Route element={<RequirePermission permission="audit:read" />}>
-              <Route path="/audit-log" element={<AuditLogPage />} />
-            </Route>
-            <Route element={<RequirePermission permission="billing:read" />}>
-              <Route path="/billing" element={<BillingPage />} />
-              <Route path="/billing/invoices" element={<InvoicesPage />} />
-              <Route path="/billing/invoices/:id" element={<InvoicePage />} />
-            </Route>
-            <Route element={<RequirePermission permission="admin:access" />}>
-              <Route path="/admin" element={<MetricsPage />} />
-              <Route path="/admin/tenants" element={<TenantsPage />} />
-              <Route path="/admin/tenants/:id" element={<TenantDetailPage />} />
-              <Route path="/admin/plans" element={<PlansAdminPage />} />
+    <ThemeProvider>
+      <AuthProvider>
+        <Routes>
+          <Route path="/login" element={<LoginPage />} />
+          <Route path="/signup" element={<SignupPage />} />
+          <Route path="/accept-invite" element={<AcceptInvitePage />} />
+          <Route path="/reset-password" element={<ResetPasswordPage />} />
+          <Route path="/pricing" element={<PricingPage />} />
+          <Route path="/terms" element={<TermsPage />} />
+          <Route path="/privacy" element={<PrivacyPage />} />
+          <Route element={<ProtectedRoute />}>
+            <Route element={<AppLayout />}>
+              <Route path="/" element={<HomePage />} />
+              <Route path="/change-password" element={<ChangePasswordPage />} />
+              <Route path="/settings" element={<SettingsPage />} />
+              <Route element={<RequirePermission permission="masterdata:read" />}>
+                <Route path="/products" element={<ProductsPage />} />
+                <Route path="/products/:id" element={<ProductDetailPage />} />
+                <Route path="/locations" element={<LocationsPage />} />
+                <Route path="/suppliers" element={<SuppliersPage />} />
+                <Route path="/inventory" element={<InventoryPage />} />
+              </Route>
+              <Route element={<RequirePermission permission="sales:read" />}>
+                <Route path="/sales" element={<ExplorerPage />} />
+                <Route path="/abc" element={<AbcPage />} />
+              </Route>
+              <Route element={<RequirePermission permission="import:sales" />}>
+                <Route path="/import" element={<ImportPage />} />
+              </Route>
+              <Route element={<RequirePermission permission="forecast:read" />}>
+                <Route path="/forecasts" element={<ForecastsPage />} />
+                <Route path="/forecasts/:id" element={<ForecastRunPage />} />
+                <Route path="/reorder" element={<ReorderPlanPage />} />
+              </Route>
+              <Route element={<RequirePermission permission="scenario:read" />}>
+                <Route path="/scenarios" element={<ScenariosPage />} />
+                <Route path="/scenarios/compare" element={<ComparePage />} />
+                <Route path="/scenarios/:id" element={<ScenarioPage />} />
+              </Route>
+              <Route element={<RequirePermission permission="team:read" />}>
+                <Route path="/team" element={<TeamPage />} />
+              </Route>
+              <Route element={<RequirePermission permission="audit:read" />}>
+                <Route path="/audit-log" element={<AuditLogPage />} />
+              </Route>
+              <Route element={<RequirePermission permission="billing:read" />}>
+                <Route path="/billing" element={<BillingPage />} />
+                <Route path="/billing/invoices" element={<InvoicesPage />} />
+                <Route path="/billing/invoices/:id" element={<InvoicePage />} />
+              </Route>
+              <Route element={<RequirePermission permission="admin:access" />}>
+                <Route path="/admin" element={<MetricsPage />} />
+                <Route path="/admin/tenants" element={<TenantsPage />} />
+                <Route path="/admin/tenants/:id" element={<TenantDetailPage />} />
+                <Route path="/admin/plans" element={<PlansAdminPage />} />
+              </Route>
             </Route>
           </Route>
-        </Route>
-      </Routes>
-    </AuthProvider>
+          <Route path="*" element={<NotFoundPage />} />
+        </Routes>
+      </AuthProvider>
+    </ThemeProvider>
   );
 }

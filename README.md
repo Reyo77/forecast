@@ -6,11 +6,14 @@ Multi-tenant SaaS for **supply-chain demand forecasting and what-if planning**. 
 
 |                                                 |                                                   |
 | ----------------------------------------------- | ------------------------------------------------- |
-| Dashboard                                       | ![dashboard](docs/screenshots/dashboard.png)      |
+| Landing page                                    | ![landing](docs/screenshots/landing.png)          |
+| Dashboard (light)                               | ![dashboard](docs/screenshots/dashboard.png)      |
+| Dashboard (dark mode)                           | ![dark](docs/screenshots/dashboard-dark.png)      |
+| Reorder plan                                    | ![reorder](docs/screenshots/reorder-plan.png)     |
 | Forecast with prediction interval and overrides | ![forecast](docs/screenshots/forecast.png)        |
 | Scenario comparison                             | ![compare](docs/screenshots/scenario-compare.png) |
 
-More screenshots: [sales explorer](docs/screenshots/sales-explorer.png) · [scenario](docs/screenshots/scenario.png) · [billing](docs/screenshots/billing.png) · [products](docs/screenshots/products.png) · [pricing](docs/screenshots/pricing.png). They are generated from the seeded demo tenant by `npm run screenshots`.
+More screenshots: [sales explorer](docs/screenshots/sales-explorer.png) · [scenario](docs/screenshots/scenario.png) · [billing](docs/screenshots/billing.png) · [products](docs/screenshots/products.png) · [pricing](docs/screenshots/pricing.png) · [ABC analysis](docs/screenshots/abc-analysis.png) · [forecast, dark](docs/screenshots/forecast-dark.png) · [settings](docs/screenshots/settings-dark.png) · [login](docs/screenshots/login.png). They are generated from the seeded demo tenant by `npm run screenshots`.
 
 ---
 
@@ -59,6 +62,8 @@ First time only: `npx playwright install chromium`.
 | **Forecasting**      | 7 models, backtesting and automatic model selection per series, background runs, accuracy table, prediction intervals, planner overrides, CSV export.                                                                                                                                                |
 | **What-if planning** | Baseline supply plan (safety stock, lead times, MOQ, capacity, BOM explosion), 6 lever types, scenario runs, side-by-side comparison.                                                                                                                                                                |
 | **AI (Gemini)**      | Forecast explanation, plain-English scenario builder (proposes levers, saves nothing until confirmed), scenario risk summary, tool-calling assistant over a fixed allow-list of read-only functions.                                                                                                 |
+| **Insights**         | **Reorder plan** (planned purchase orders with supplier, order/arrival dates, quantity and spend, urgent filter, CSV export) and **ABC analysis** (Pareto chart + A/B/C classes by revenue).                                                                                                         |
+| **Product polish**   | Public landing page, split-screen auth pages, **light / dark / system theme** (persisted, no flash), Ctrl/⌘+K command palette, settings page, 404 + legal pages, responsive sidebar layout.                                                                                                          |
 | **Operations**       | Super Admin console (tenants, plans, MRR, trial conversion, AI usage, failed jobs, suspend/reactivate, read-only impersonation), audit log, in-app notifications, background job runner with retries.                                                                                                |
 
 ---
@@ -219,7 +224,7 @@ docker compose -f docker-compose.prod.yml up -d --build
 
 ### Environment variables
 
-See `.env.example`. The API refuses to start if a required variable is missing (validated with Zod in `apps/api/src/config`).
+See `.env.example`. `AUTH_RATE_LIMIT_MAX` (default 20 per 15 min per IP) can be raised for local end-to-end runs. The API refuses to start if a required variable is missing (validated with Zod in `apps/api/src/config`).
 
 ---
 

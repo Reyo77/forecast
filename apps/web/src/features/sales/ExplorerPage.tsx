@@ -281,7 +281,7 @@ export function ExplorerPage() {
                           stroke="var(--series-1)"
                           strokeWidth={2.5}
                           fill="url(#sales-fill)"
-                          activeDot={{ r: 5, strokeWidth: 2, stroke: '#fff' }}
+                          activeDot={{ r: 5, strokeWidth: 2, stroke: 'var(--chart-surface)' }}
                         />
                       </AreaChart>
                     ) : (
@@ -311,7 +311,7 @@ export function ExplorerPage() {
                             stroke={colorOf(s.key)}
                             strokeWidth={2}
                             dot={false}
-                            activeDot={{ r: 4, strokeWidth: 2, stroke: '#fff' }}
+                            activeDot={{ r: 4, strokeWidth: 2, stroke: 'var(--chart-surface)' }}
                             connectNulls
                           />
                         ))}

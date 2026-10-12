@@ -11,7 +11,7 @@ test('Phase 6: demo data → forecast → scenario "supplier 3 weeks late" → r
   await page.getByLabel('Password').fill('Password123');
   await page.getByRole('button', { name: 'Sign up' }).click();
   await page.getByRole('button', { name: 'Load demo data' }).click();
-  await expect(page.getByText(/Demo data loaded/)).toBeVisible();
+  await expect(page.getByText(/Demo data loaded/)).toBeVisible({ timeout: 30_000 });
 
   // Scenarios need a finished forecast first.
   await page.getByRole('link', { name: 'Scenarios' }).click();

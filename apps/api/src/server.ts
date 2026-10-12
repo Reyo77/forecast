@@ -25,7 +25,9 @@ try {
   } else {
     aiClient = new GeminiClient(env.GEMINI_API_KEY, env.GEMINI_MODEL);
   }
-  createApp(env, { aiClient }).listen(env.PORT, () => logger.info(`API listening on :${env.PORT}`));
+  createApp(env, { aiClient, loginRateLimitMax: env.AUTH_RATE_LIMIT_MAX }).listen(env.PORT, () =>
+    logger.info(`API listening on :${env.PORT}`),
+  );
   registerCoreJobHandlers();
   void ensureDefaultPlans()
     .then(scheduleRecurringJobs)

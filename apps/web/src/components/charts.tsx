@@ -13,7 +13,7 @@ export const SERIES = [
 ];
 
 export const axisProps = {
-  tick: { fontSize: 11, fill: '#64748b' },
+  tick: { fontSize: 11, fill: 'var(--chart-ink-2)' },
   axisLine: false,
   tickLine: false,
 } as const;

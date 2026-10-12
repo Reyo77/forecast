@@ -21,6 +21,13 @@ describe('loadEnv', () => {
     expect(env.SIMULATED_PAYMENTS).toBe(true);
   });
 
+  it('defaults the auth rate limit to 20 and accepts an override', () => {
+    expect(loadEnv(valid as NodeJS.ProcessEnv).AUTH_RATE_LIMIT_MAX).toBe(20);
+    expect(
+      loadEnv({ ...valid, AUTH_RATE_LIMIT_MAX: '500' } as NodeJS.ProcessEnv).AUTH_RATE_LIMIT_MAX,
+    ).toBe(500);
+  });
+
   it('throws naming the missing variable', () => {
     const rest: Record<string, string> = { ...valid };
     delete rest.JWT_ACCESS_SECRET;

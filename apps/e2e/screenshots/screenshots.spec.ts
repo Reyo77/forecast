@@ -22,7 +22,11 @@ async function api(page: Page, method: string, url: string, body?: unknown) {
 }
 
 test('README screenshots from the demo tenant', async ({ page }) => {
+  await page.goto('/');
+  await expect(page.getByTestId('landing')).toBeVisible();
+  await page.screenshot({ path: out('landing'), fullPage: true });
   await page.goto('/login');
+  await page.screenshot({ path: out('login') });
   await page.getByLabel('Email').fill(email);
   await page.getByLabel('Password').fill(password);
   await page.getByRole('button', { name: 'Log in' }).click();
@@ -122,6 +126,30 @@ test('README screenshots from the demo tenant', async ({ page }) => {
   await expect(page.getByTestId('kpi-compare')).toBeVisible();
   await page.waitForTimeout(800);
   await page.screenshot({ path: out('scenario-compare'), fullPage: true });
+
+  await page.goto('/reorder');
+  await expect(page.getByTestId('plan-table')).toBeVisible();
+  await page.screenshot({ path: out('reorder-plan'), fullPage: true });
+  await page.goto('/abc');
+  await expect(page.getByTestId('abc-table')).toBeVisible();
+  await page.waitForTimeout(800);
+  await page.screenshot({ path: out('abc-analysis'), fullPage: true });
+
+  // Dark mode
+  await page.evaluate(() => localStorage.setItem('sc-theme', 'dark'));
+  await page.goto('/');
+  await expect(page.getByTestId('card-accuracy')).toBeVisible();
+  await page.waitForTimeout(800);
+  await page.screenshot({ path: out('dashboard-dark'), fullPage: true });
+  await page.goto(`/forecasts/${runId}`);
+  await expect(page.getByTestId('series-summary')).toBeVisible();
+  await page.waitForTimeout(800);
+  await page.screenshot({ path: out('forecast-dark'), fullPage: true });
+  await page.goto('/settings');
+  await expect(page.getByRole('heading', { name: 'Settings' })).toBeVisible();
+  await page.waitForLoadState('networkidle');
+  await page.screenshot({ path: out('settings-dark') });
+  await page.evaluate(() => localStorage.setItem('sc-theme', 'light'));
 
   await page.goto('/billing');
   await expect(page.getByTestId('current-plan')).toBeVisible();

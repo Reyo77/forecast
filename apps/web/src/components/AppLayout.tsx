@@ -1,93 +1,35 @@
 import { useEffect, useState } from 'react';
 import { useQuery } from '@tanstack/react-query';
-import { Link, NavLink, Outlet, useLocation } from 'react-router-dom';
-import type { Permission, SubscriptionDto } from '@supplycast/shared';
+import { Link, NavLink, Outlet, useLocation, useNavigate } from 'react-router-dom';
+import type { SubscriptionDto } from '@supplycast/shared';
 import { api } from '../api/client';
 import { useAuth } from '../features/auth/AuthContext';
 import { useCan } from '../features/auth/Can';
 import { AssistantPanel } from '../features/ai/AssistantPanel';
 import { NotificationBell } from '../features/notifications/NotificationBell';
+import { useThemeSafe } from '../theme';
+import { CommandPalette } from './CommandPalette';
 import { Icon, Logo } from './Icon';
+import { NAV_ITEMS, type NavItem } from './navItems';
 
-export interface NavItem {
-  to: string;
-  label: string;
-  permission: Permission;
-  group: string;
-  icon: string;
+function ThemeToggle() {
+  const theme = useThemeSafe();
+  if (!theme) return null;
+  const dark = theme.resolved === 'dark';
+  return (
+    <button
+      onClick={theme.toggle}
+      aria-label={dark ? 'Switch to light mode' : 'Switch to dark mode'}
+      title={dark ? 'Light mode' : 'Dark mode'}
+      className="rounded-lg p-1.5 text-gray-500 hover:bg-gray-100 hover:text-gray-900"
+    >
+      <Icon name={dark ? 'sun' : 'moon'} className="h-5 w-5" />
+    </button>
+  );
 }
 
-export const NAV_ITEMS: NavItem[] = [
-  { to: '/', label: 'Home', permission: 'dashboard:read', group: 'Overview', icon: 'home' },
-  { to: '/products', label: 'Products', permission: 'masterdata:read', group: 'Data', icon: 'box' },
-  {
-    to: '/locations',
-    label: 'Locations',
-    permission: 'masterdata:read',
-    group: 'Data',
-    icon: 'pin',
-  },
-  {
-    to: '/suppliers',
-    label: 'Suppliers',
-    permission: 'masterdata:read',
-    group: 'Data',
-    icon: 'truck',
-  },
-  {
-    to: '/inventory',
-    label: 'Inventory',
-    permission: 'masterdata:read',
-    group: 'Data',
-    icon: 'stack',
-  },
-  { to: '/sales', label: 'Sales', permission: 'sales:read', group: 'Demand', icon: 'chart' },
-  { to: '/import', label: 'Import', permission: 'import:sales', group: 'Demand', icon: 'upload' },
-  {
-    to: '/forecasts',
-    label: 'Forecasts',
-    permission: 'forecast:read',
-    group: 'Planning',
-    icon: 'trend',
-  },
-  {
-    to: '/scenarios',
-    label: 'Scenarios',
-    permission: 'scenario:read',
-    group: 'Planning',
-    icon: 'flask',
-  },
-  { to: '/team', label: 'Team', permission: 'team:read', group: 'Workspace', icon: 'users' },
-  {
-    to: '/billing',
-    label: 'Billing',
-    permission: 'billing:read',
-    group: 'Workspace',
-    icon: 'card',
-  },
-  {
-    to: '/audit-log',
-    label: 'Audit log',
-    permission: 'audit:read',
-    group: 'Workspace',
-    icon: 'shield',
-  },
-  { to: '/admin', label: 'Overview', permission: 'admin:access', group: 'Platform', icon: 'home' },
-  {
-    to: '/admin/tenants',
-    label: 'Tenants',
-    permission: 'admin:access',
-    group: 'Platform',
-    icon: 'building',
-  },
-  {
-    to: '/admin/plans',
-    label: 'Plans',
-    permission: 'admin:access',
-    group: 'Platform',
-    icon: 'card',
-  },
-];
+export { NAV_ITEMS };
+export type { NavItem };
 
 function TrialBanner() {
   const can = useCan();
@@ -102,7 +44,7 @@ function TrialBanner() {
     <div
       role="status"
       data-testid="trial-banner-global"
-      className="flex flex-wrap items-center justify-center gap-2 border-b border-amber-200 bg-gradient-to-r from-amber-50 to-orange-50 px-6 py-2 text-center text-sm text-amber-900 print:hidden"
+      className="flex flex-wrap items-center justify-center gap-2 border-b border-amber-200 bg-amber-50 px-6 py-2 text-center text-sm text-amber-900 print:hidden"
     >
       <span aria-hidden>⏳</span>
       <span>
@@ -169,8 +111,20 @@ export function AppLayout() {
   const can = useCan();
   const [assistantOpen, setAssistantOpen] = useState(false);
   const [menuOpen, setMenuOpen] = useState(false);
+  const [paletteOpen, setPaletteOpen] = useState(false);
   const { pathname } = useLocation();
+  const navigate = useNavigate();
   useEffect(() => setMenuOpen(false), [pathname]);
+  useEffect(() => {
+    const onKey = (e: KeyboardEvent) => {
+      if ((e.metaKey || e.ctrlKey) && e.key.toLowerCase() === 'k') {
+        e.preventDefault();
+        setPaletteOpen((v) => !v);
+      }
+    };
+    window.addEventListener('keydown', onKey);
+    return () => window.removeEventListener('keydown', onKey);
+  }, []);
 
   return (
     <div className="min-h-screen lg:pl-64">
@@ -216,6 +170,15 @@ export function AppLayout() {
             >
               <Icon name="menu" />
             </button>
+            <button
+              onClick={() => setPaletteOpen(true)}
+              aria-label="Open command palette"
+              className="hidden items-center gap-2 border border-gray-200 px-3 py-1.5 text-gray-500 sm:inline-flex"
+            >
+              <Icon name="search" className="h-4 w-4" />
+              <span className="font-normal">Search…</span>
+              <kbd className="rounded border border-gray-200 px-1.5 text-xs">Ctrl K</kbd>
+            </button>
             <div className="flex-1" />
             {can('ai:use') && !impersonation && (
               <button
@@ -226,6 +189,7 @@ export function AppLayout() {
                 Ask AI
               </button>
             )}
+            <ThemeToggle />
             {can('notifications:read') && <NotificationBell />}
             <span className="hidden items-center gap-2 border-l border-gray-200 pl-3 sm:flex">
               <span
@@ -239,11 +203,18 @@ export function AppLayout() {
               </span>
             </span>
             <span className="sm:hidden" data-testid="whoami-short" hidden />
+            <NavLink
+              to="/settings"
+              aria-label="Settings"
+              className="rounded-lg p-1.5 text-gray-500 hover:bg-gray-100 hover:text-gray-900"
+            >
+              <Icon name="cog" />
+            </NavLink>
             <NavLink to="/change-password" className="text-sm text-blue-600 hover:underline">
               Change password
             </NavLink>
             <button
-              onClick={() => void logout()}
+              onClick={() => void logout().then(() => navigate('/login'))}
               className="inline-flex items-center gap-1.5 rounded-lg border border-gray-200 px-3 py-1.5 text-sm text-gray-700"
             >
               <Icon name="logout" className="h-4 w-4" />
@@ -252,6 +223,7 @@ export function AppLayout() {
           </div>
         </header>
         <TrialBanner />
+        <CommandPalette open={paletteOpen} onClose={() => setPaletteOpen(false)} />
         {assistantOpen && <AssistantPanel onClose={() => setAssistantOpen(false)} />}
         <main className="flex-1">
           {suspended ? (

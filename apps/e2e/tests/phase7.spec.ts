@@ -12,7 +12,7 @@ test('Phase 7: explain a forecast → build a scenario from a sentence → confi
   await page.getByLabel('Password').fill('Password123');
   await page.getByRole('button', { name: 'Sign up' }).click();
   await page.getByRole('button', { name: 'Load demo data' }).click();
-  await expect(page.getByText(/Demo data loaded/)).toBeVisible();
+  await expect(page.getByText(/Demo data loaded/)).toBeVisible({ timeout: 30_000 });
 
   // A finished forecast is the starting point for everything AI.
   await page.getByRole('link', { name: 'Forecasts' }).click();

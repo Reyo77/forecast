@@ -2,6 +2,49 @@
 @tailwind components;
 @tailwind utilities;
 
+/* ---- Theme tokens (RGB channels so Tailwind can apply opacity) ---- */
+:root {
+  color-scheme: light;
+  --surface: 255 255 255;
+  --g-50: 248 250 252;
+  --g-100: 241 245 249;
+  --g-200: 226 232 240;
+  --g-300: 203 213 225;
+  --g-400: 148 163 184;
+  --g-500: 100 116 139;
+  --g-600: 71 85 105;
+  --g-700: 51 65 85;
+  --g-800: 30 41 59;
+  --g-900: 15 23 42;
+}
+:root.dark {
+  color-scheme: dark;
+  --surface: 17 24 39;
+  --g-50: 8 12 24;
+  --g-100: 30 41 59;
+  --g-200: 45 55 72;
+  --g-300: 71 85 105;
+  --g-400: 100 116 139;
+  --g-500: 148 163 184;
+  --g-600: 178 190 206;
+  --g-700: 203 213 225;
+  --g-800: 226 232 240;
+  --g-900: 248 250 252;
+  --chart-surface: #111827;
+  --chart-ink: #f8fafc;
+  --chart-ink-2: #94a3b8;
+  --chart-grid: #263146;
+  --series-1: #818cf8;
+  --series-2: #fb923c;
+  --series-3: #34d399;
+  --series-4: #fbbf24;
+  --series-5: #f472b6;
+  --series-6: #22d3ee;
+  --series-7: #a78bfa;
+  --series-8: #f87171;
+  --shadow-card: 0 0 0 rgba(0, 0, 0, 0);
+}
+
 /* ---- Chart tokens: one validated categorical palette, brand-first ordering ---- */
 :root {
   --chart-surface: #ffffff;
@@ -156,11 +199,21 @@
   padding: 10px 12px !important;
 }
 .recharts-legend-item-text {
-  color: #475569 !important;
+  color: rgb(var(--g-600)) !important;
   font-size: 12px;
 }
 .recharts-cartesian-axis-tick-value {
   font-size: 11px;
+}
+
+.dark .shadow-card {
+  box-shadow: none;
+}
+.dark .shadow-pop {
+  box-shadow: 0 10px 30px -8px rgba(0, 0, 0, 0.6);
+}
+.dark .recharts-tooltip-cursor {
+  fill: rgba(148, 163, 184, 0.08);
 }
 
 @media print {

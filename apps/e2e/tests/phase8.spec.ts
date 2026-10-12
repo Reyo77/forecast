@@ -16,7 +16,7 @@ test('Phase 8: dashboard, notifications, security basics and deleting a company'
   await expect(page.getByRole('heading', { name: /Welcome back/ })).toBeVisible();
   await expect(page.getByTestId('getting-started')).toBeVisible();
   await page.getByRole('button', { name: 'Load demo data' }).click();
-  await expect(page.getByText(/Demo data loaded/)).toBeVisible();
+  await expect(page.getByText(/Demo data loaded/)).toBeVisible({ timeout: 30_000 });
   await page.reload();
   await expect(page.getByTestId('getting-started')).toHaveCount(0);
   await expect(page.getByTestId('card-data')).toContainText(

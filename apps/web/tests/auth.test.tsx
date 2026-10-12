@@ -39,8 +39,25 @@ describe('auth UI', () => {
 
   it('redirects anonymous visitors to the login page', async () => {
     mockFetch({ 'POST /auth/refresh': () => json(401, { error: { code: 'X', message: 'no' } }) });
-    renderAt('/');
+    renderAt('/products');
     expect(await screen.findByRole('heading', { name: 'Log in' })).toBeInTheDocument();
+  });
+
+  it('shows the marketing landing page to anonymous visitors at the root', async () => {
+    mockFetch({ 'POST /auth/refresh': () => json(401, { error: { code: 'X', message: 'no' } }) });
+    renderAt('/');
+    expect(await screen.findByTestId('landing')).toBeInTheDocument();
+    expect(screen.getByRole('link', { name: 'Start your free trial' })).toHaveAttribute(
+      'href',
+      '/signup',
+    );
+    expect(screen.getAllByRole('link', { name: 'Log in' })[0]).toHaveAttribute('href', '/login');
+  });
+
+  it('unknown URLs show the 404 page', async () => {
+    mockFetch({ 'POST /auth/refresh': () => json(401, { error: { code: 'X', message: 'no' } }) });
+    renderAt('/no/such/page');
+    expect(await screen.findByTestId('not-found')).toBeInTheDocument();
   });
 
   it('restores a session from the refresh cookie and shows the home page', async () => {
