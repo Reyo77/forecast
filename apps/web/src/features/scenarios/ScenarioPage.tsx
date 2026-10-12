@@ -16,6 +16,7 @@ import { Notice, errText, inputCls } from '../../components/ui';
 import { formatMoney } from '../../lib';
 import { Can } from '../auth/Can';
 import { scenarioApi } from './api';
+import { RiskCard } from '../ai/RiskCard';
 import { KpiCards } from './Kpis';
 import { LeverForm } from './LeverForm';
 
@@ -239,6 +240,9 @@ export function ScenarioPage() {
             )}
           </div>
           <div>
+            <div className="mb-3">
+              <RiskCard scenarioRunId={done.id} />
+            </div>
             <h2 className="mb-2 text-lg font-semibold">Products at risk (scenario)</h2>
             <AtRiskTable rows={atRisk} />
           </div>

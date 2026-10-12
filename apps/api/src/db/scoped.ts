@@ -30,6 +30,7 @@ export const TENANT_SCOPED_MODELS = new Set<string>([
   'ForecastAccuracy',
   'ForecastOverride',
   'Scenario',
+  'AiInsight',
   'ScenarioLever',
   'ScenarioRun',
   'ScenarioResult',

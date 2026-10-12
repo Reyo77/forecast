@@ -21,6 +21,7 @@ import { paged, paginationSchema, skipTake } from '../../lib/pagination';
 import { auditReq } from '../audit/service';
 import { createWithinLimit } from '../billing/limits';
 import { startScenarioRun } from './service';
+import { leverSummary, loadNames } from './summary';
 
 const MAX_LEVERS = 20;
 const isoDay = (d: Date) => d.toISOString().slice(0, 10);
@@ -28,63 +29,12 @@ const num = (d: unknown) => Number(d ?? 0);
 
 type Kpis = { baseline: PlanKpisDto; scenario: PlanKpisDto };
 
-function leverSummary(
-  l: { type: string; target: Record<string, unknown>; params: Record<string, unknown> },
-  names: Map<string, string>,
-): string {
-  const t = l.target as Record<string, string>;
-  const p = l.params as Record<string, number | string | undefined>;
-  const scope = (x: Record<string, string>) =>
-    x.scope === 'ALL' ? 'everything' : `${x.scope!.toLowerCase()} ${names.get(x.id!) ?? x.id}`;
-  const range =
-    p.startDate || p.endDate
-      ? ` (${p.startDate ? String(p.startDate).slice(0, 10) : 'start'} → ${p.endDate ? String(p.endDate).slice(0, 10) : 'end'})`
-      : '';
-  switch (l.type) {
-    case 'DEMAND_CHANGE':
-      return `Demand ${Number(p.percent) >= 0 ? '+' : ''}${p.percent}% for ${scope(t)}${range}`;
-    case 'SUPPLIER_DELAY':
-      return `${names.get(t.supplierId!) ?? 'Supplier'} is ${p.extraDays} days late${range}`;
-    case 'LEAD_TIME_CHANGE':
-      return `Lead time becomes ${p.leadTimeDays} days (${names.get(t.supplierProductId!) ?? 'supplier link'})`;
-    case 'CAPACITY_CAP':
-      return `${names.get(t.supplierId!) ?? 'Supplier'} capped at ${p.weeklyQuantity} units/week`;
-    case 'SERVICE_LEVEL':
-      return `Target service level ${(Number(p.serviceLevel) * 100).toFixed(1)}%`;
-    case 'PRICE_CHANGE':
-      return `Price ${Number(p.percent) >= 0 ? '+' : ''}${p.percent}% for ${scope(t)} (elasticity ${p.elasticity ?? 1})${range}`;
-    default:
-      return l.type;
-  }
-}
-
 export function scenarioRouter(guards: Guards): Router {
   const router = Router();
   const read = guards.tenant('scenario:read');
   const write = guards.tenant('scenario:write');
 
-  async function names(db: ScopedClient): Promise<Map<string, string>> {
-    const [products, categories, locations, suppliers, links] = await Promise.all([
-      db.product.findMany({ select: { id: true, sku: true } }),
-      db.category.findMany({ select: { id: true, name: true } }),
-      db.location.findMany({ select: { id: true, code: true } }),
-      db.supplier.findMany({ select: { id: true, name: true } }),
-      db.supplierProduct.findMany({
-        select: {
-          id: true,
-          supplier: { select: { name: true } },
-          product: { select: { sku: true } },
-        },
-      }),
-    ]);
-    const m = new Map<string, string>();
-    products.forEach((p) => m.set(p.id, p.sku));
-    categories.forEach((c) => m.set(c.id, c.name));
-    locations.forEach((l) => m.set(l.id, l.code));
-    suppliers.forEach((s) => m.set(s.id, s.name));
-    links.forEach((l) => m.set(l.id, `${l.supplier.name} / ${l.product.sku}`));
-    return m;
-  }
+  const names = loadNames;
 
   /** Every id a lever points at must belong to the caller's tenant (404 otherwise). */
   async function assertLeverRefs(db: ScopedClient, lever: LeverInput) {

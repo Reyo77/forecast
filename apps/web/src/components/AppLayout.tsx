@@ -4,6 +4,8 @@ import type { Permission, SubscriptionDto } from '@supplycast/shared';
 import { api } from '../api/client';
 import { useAuth } from '../features/auth/AuthContext';
 import { useCan } from '../features/auth/Can';
+import { useState } from 'react';
+import { AssistantPanel } from '../features/ai/AssistantPanel';
 
 export const NAV_ITEMS: { to: string; label: string; permission: Permission }[] = [
   { to: '/', label: 'Home', permission: 'dashboard:read' },
@@ -53,6 +55,7 @@ function TrialBanner() {
 export function AppLayout() {
   const { user, logout, suspended, impersonation, stopImpersonation } = useAuth();
   const can = useCan();
+  const [assistantOpen, setAssistantOpen] = useState(false);
   return (
     <div className="min-h-screen">
       {impersonation && (
@@ -90,6 +93,14 @@ export function AppLayout() {
               </NavLink>
             ))}
           </nav>
+          {can('ai:use') && !impersonation && (
+            <button
+              onClick={() => setAssistantOpen((v) => !v)}
+              className="rounded border border-purple-300 bg-purple-50 px-3 py-1 text-sm text-purple-900"
+            >
+              Ask AI
+            </button>
+          )}
           <span className="text-sm text-gray-600" data-testid="whoami">
             {user?.name} ({user?.role})
           </span>
@@ -101,6 +112,7 @@ export function AppLayout() {
           </button>
         </div>
       </header>
+      {assistantOpen && <AssistantPanel onClose={() => setAssistantOpen(false)} />}
       <TrialBanner />
       <main className="mx-auto max-w-6xl p-6">
         {suspended ? (

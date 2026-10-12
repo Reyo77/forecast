@@ -16,6 +16,10 @@ import { supplyRouter } from './modules/masterdata/supply';
 import { salesRouter } from './modules/sales/routes';
 import { forecastRouter } from './modules/forecast/routes';
 import { scenarioRouter } from './modules/scenarios/routes';
+import { aiRouter } from './modules/ai/routes';
+import { AiService } from './modules/ai/service';
+import { UnconfiguredAiClient } from './ai/gemini';
+import type { AiClient } from './ai/types';
 import { auditRouter } from './modules/audit/routes';
 
 export type AppConfig = Pick<Env, 'APP_URL' | 'JWT_ACCESS_SECRET'> & {
@@ -25,6 +29,9 @@ export type AppConfig = Pick<Env, 'APP_URL' | 'JWT_ACCESS_SECRET'> & {
 
 export interface AppOptions {
   loginRateLimitMax?: number;
+  /** The AI backend (Gemini in production, a fake in tests). Defaults to "not configured". */
+  aiClient?: AiClient;
+  aiTimeoutMs?: number;
 }
 
 export function createApp(env: AppConfig, options: AppOptions = {}) {
@@ -58,6 +65,14 @@ export function createApp(env: AppConfig, options: AppOptions = {}) {
   app.use(salesRouter(guards));
   app.use(forecastRouter(guards));
   app.use(scenarioRouter(guards));
+  app.use(
+    aiRouter({
+      guards,
+      ai: new AiService(options.aiClient ?? new UnconfiguredAiClient(), {
+        timeoutMs: options.aiTimeoutMs,
+      }),
+    }),
+  );
   app.use(
     '/admin',
     adminRouter({

@@ -11,6 +11,8 @@ export const envSchema = z.object({
   API_URL: z.string().url(),
   GEMINI_API_KEY: z.string().min(1),
   GEMINI_MODEL: z.string().min(1),
+  /** `fake` swaps in a deterministic offline AI (development and end-to-end tests only). */
+  AI_PROVIDER: z.enum(['gemini', 'fake']).default('gemini'),
   SIMULATED_PAYMENTS: z.enum(['true', 'false']).transform((v) => v === 'true'),
   SUPER_ADMIN_EMAIL: z.string().email(),
   SUPER_ADMIN_PASSWORD: z.string().min(1),

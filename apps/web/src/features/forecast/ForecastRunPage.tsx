@@ -18,6 +18,7 @@ import { Notice, errText, inputCls } from '../../components/ui';
 import { formatDate } from '../../lib';
 import { Can } from '../auth/Can';
 import { mdApi } from '../masterdata/api';
+import { ExplainCard } from '../ai/ExplainCard';
 import { forecastApi } from './api';
 import { ProgressBar, StatusBadge } from './ForecastsPage';
 
@@ -346,6 +347,7 @@ export function ForecastRunPage() {
                   )}
                 </figure>
 
+                <ExplainCard runId={id} productId={productId} locationId={locationId} />
                 <Can permission="forecast:override">
                   {locationId ? (
                     <form

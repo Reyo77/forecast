@@ -5,6 +5,7 @@ import { Notice, errText, inputCls } from '../../components/ui';
 import { formatDate } from '../../lib';
 import { Can } from '../auth/Can';
 import { forecastApi } from '../forecast/api';
+import { ScenarioBuilder } from '../ai/ScenarioBuilder';
 import { scenarioApi } from './api';
 
 const STATUS_CLS: Record<string, string> = {
@@ -120,6 +121,8 @@ export function ScenariosPage() {
           </form>
         )}
       </Can>
+
+      {doneRuns.length > 0 && <ScenarioBuilder />}
 
       {scenarios.data && scenarios.data.items.length === 0 ? (
         <p className="text-sm text-gray-500" data-testid="no-scenarios">

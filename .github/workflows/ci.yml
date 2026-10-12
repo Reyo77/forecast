@@ -14,6 +14,7 @@ env:
   API_URL: http://localhost:4000
   GEMINI_API_KEY: ci-fake-key
   GEMINI_MODEL: gemini-2.5-flash
+  AI_PROVIDER: fake # CI never calls the real Gemini API
   SIMULATED_PAYMENTS: 'true'
   SUPER_ADMIN_EMAIL: admin@supplycast.local
   SUPER_ADMIN_PASSWORD: ci-password
